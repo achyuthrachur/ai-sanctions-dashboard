@@ -300,34 +300,63 @@ export default function BlockedAccounts({ filter }: BlockedAccountsProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Monthly blocks area chart */}
-        <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-5 shadow-card">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-sm font-semibold text-text-primary">New Blocks Per Month</div>
-              <div className="text-xs text-text-muted mt-0.5">Oct 2023 – Mar 2026 · monitoring period</div>
+        {filter.viewMode === 'split' ? (
+          <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 shadow-card overflow-hidden">
+            {/* Column headers */}
+            <div className="grid grid-cols-2">
+              <div className="px-5 py-3 bg-[#E8F1FB] border-r border-b border-[#D0D9E8] flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#0065B3]" />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#003571]">Relationship</span>
+                <span className="ml-auto text-[11px] text-[#0065B3] font-semibold tabular-nums">
+                  {filteredAccounts.filter(a => a.alertTypeCat === 'relationship').length} accounts
+                </span>
+              </div>
+              <div className="px-5 py-3 bg-[#FFF3E0] border-b border-[#D0D9E8] flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#C45A00]" />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#7A3300]">Transaction</span>
+                <span className="ml-auto text-[11px] text-[#C45A00] font-semibold tabular-nums">
+                  {filteredAccounts.filter(a => a.alertTypeCat !== 'relationship').length} accounts
+                </span>
+              </div>
             </div>
-            {filter.viewMode === 'split' ? (
-              <span className="inline-flex items-center gap-3 text-xs text-text-muted">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ background: REL_COLOR }} /> Relationship</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ background: TRX_COLOR }} /> Transaction</span>
-              </span>
-            ) : (
+            {/* Two-column bar charts */}
+            <div className="grid grid-cols-2 divide-x divide-gray-100">
+              <div className="h-[160px] px-4 py-3">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyBlocks} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F0F2F4" vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#8A97A5" }} axisLine={false} tickLine={false} interval={4} />
+                    <YAxis tick={{ fontSize: 10, fill: "#8A97A5" }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<BlockTooltip />} />
+                    <Bar dataKey="countRel" name="Relationship" fill={REL_COLOR} radius={[2,2,0,0]} maxBarSize={16} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="h-[160px] px-4 py-3">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyBlocks} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F0F2F4" vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#8A97A5" }} axisLine={false} tickLine={false} interval={4} />
+                    <YAxis tick={{ fontSize: 10, fill: "#8A97A5" }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<BlockTooltip />} />
+                    <Bar dataKey="countTrx" name="Transaction" fill={TRX_COLOR} radius={[2,2,0,0]} maxBarSize={16} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-5 shadow-card">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-sm font-semibold text-text-primary">New Blocks Per Month</div>
+                <div className="text-xs text-text-muted mt-0.5">Oct 2023 – Mar 2026 · monitoring period</div>
+              </div>
               <span className="inline-flex items-center gap-1.5 text-xs text-text-muted">
                 <span className="w-2 h-2 rounded-full bg-[#0065B3] inline-block" /> Block events
               </span>
-            )}
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
-            {filter.viewMode === 'split' ? (
-              <BarChart data={monthlyBlocks} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F2F4" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#8A97A5" }} axisLine={false} tickLine={false} interval={4} />
-                <YAxis tick={{ fontSize: 10, fill: "#8A97A5" }} axisLine={false} tickLine={false} />
-                <Tooltip content={<BlockTooltip />} />
-                <Bar dataKey="countRel" name="Relationship" stackId="s" fill={REL_COLOR} radius={[0,0,0,0]} maxBarSize={16} />
-                <Bar dataKey="countTrx" name="Transaction"  stackId="s" fill={TRX_COLOR} radius={[2,2,0,0]} maxBarSize={16} />
-              </BarChart>
-            ) : (
+            </div>
+            <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={monthlyBlocks} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
                 <defs>
                   <linearGradient id="blockGrad" x1="0" y1="0" x2="0" y2="1">
@@ -343,9 +372,9 @@ export default function BlockedAccounts({ filter }: BlockedAccountsProps) {
                   fill="url(#blockGrad)" dot={false}
                   activeDot={{ r: 4, fill: "#0065B3", stroke: "#fff", strokeWidth: 2 }} />
               </AreaChart>
-            )}
-          </ResponsiveContainer>
-        </div>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* Right column */}
         <div className="flex flex-col gap-4">

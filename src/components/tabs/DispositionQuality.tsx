@@ -196,51 +196,41 @@ export default function DispositionQuality({ filter }: DispositionQualityProps) 
       <div>
         <SectionLabel label="Quality Metrics — 4-Week Average" />
         {filter.viewMode === 'split' ? (
-          <div className="space-y-3">
-            {/* True Match Rate split row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-lg border-l-4 border-l-[#0065B3] border border-[#D0D9E8] p-4 shadow-sm">
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2">True Match Rate — Relationship</div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#0065B3]">
-                    {kpi.tmrRel.toFixed(2)}
-                  </span>
-                  <span className="text-sm text-[#4A5D75]">%</span>
-                </div>
-                <p className="text-[11px] text-[#8699AF] mt-1">Higher — entity alerts more confirmed</p>
+          <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm overflow-hidden">
+            {/* Column headers */}
+            <div className="grid grid-cols-2">
+              <div className="px-5 py-3 bg-[#E8F1FB] border-r border-b border-[#D0D9E8] flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#0065B3]" />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#003571]">Relationship</span>
+                <span className="ml-auto text-[11px] text-[#0065B3] font-semibold tabular-nums">{kpi.tmrRel.toFixed(2)}% TMR avg</span>
               </div>
-              <div className="bg-white rounded-lg border-l-4 border-l-[#C45A00] border border-[#D0D9E8] p-4 shadow-sm">
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2">True Match Rate — Transaction</div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#C45A00]">
-                    {kpi.tmrTrx.toFixed(2)}
-                  </span>
-                  <span className="text-sm text-[#4A5D75]">%</span>
-                </div>
-                <p className="text-[11px] text-[#8699AF] mt-1">Lower — more noise in payment screening</p>
+              <div className="px-5 py-3 bg-[#FFF3E0] border-b border-[#D0D9E8] flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#C45A00]" />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#7A3300]">Transaction</span>
+                <span className="ml-auto text-[11px] text-[#C45A00] font-semibold tabular-nums">{kpi.tmrTrx.toFixed(2)}% TMR avg</span>
               </div>
             </div>
-            {/* QA Setback Rate split row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-lg border-l-4 border-l-[#0065B3] border border-[#D0D9E8] p-4 shadow-sm">
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2">QA Setback Rate — Relationship</div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#1A6632]">
-                    {kpi.sbrRel.toFixed(2)}
-                  </span>
-                  <span className="text-sm text-[#4A5D75]">%</span>
+            {/* Two-column KPI content */}
+            <div className="grid grid-cols-2 divide-x divide-[#D0D9E8]">
+              <div className="p-5 space-y-3">
+                <div>
+                  <div className="text-[11px] text-[#4A5D75] mb-0.5">True Match Rate</div>
+                  <div className="font-['IBM_Plex_Sans_Condensed'] font-bold text-2xl text-[#0065B3]">{kpi.tmrRel.toFixed(2)}%</div>
                 </div>
-                <p className="text-[11px] text-[#8699AF] mt-1">Lower — entity docs better organized</p>
+                <div>
+                  <div className="text-[11px] text-[#4A5D75] mb-0.5">QA Setback Rate</div>
+                  <div className="font-['IBM_Plex_Sans_Condensed'] font-bold text-2xl text-[#1A6632]">{kpi.sbrRel.toFixed(2)}%</div>
+                </div>
               </div>
-              <div className="bg-white rounded-lg border-l-4 border-l-[#C45A00] border border-[#D0D9E8] p-4 shadow-sm">
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2">QA Setback Rate — Transaction</div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#C45A00]">
-                    {kpi.sbrTrx.toFixed(2)}
-                  </span>
-                  <span className="text-sm text-[#4A5D75]">%</span>
+              <div className="p-5 space-y-3">
+                <div>
+                  <div className="text-[11px] text-[#4A5D75] mb-0.5">True Match Rate</div>
+                  <div className="font-['IBM_Plex_Sans_Condensed'] font-bold text-2xl text-[#C45A00]">{kpi.tmrTrx.toFixed(2)}%</div>
                 </div>
-                <p className="text-[11px] text-[#8699AF] mt-1">Higher — transaction context harder to doc</p>
+                <div>
+                  <div className="text-[11px] text-[#4A5D75] mb-0.5">QA Setback Rate</div>
+                  <div className="font-['IBM_Plex_Sans_Condensed'] font-bold text-2xl text-[#C45A00]">{kpi.sbrTrx.toFixed(2)}%</div>
+                </div>
               </div>
             </div>
           </div>
@@ -287,103 +277,177 @@ export default function DispositionQuality({ filter }: DispositionQualityProps) 
       )}
 
       {/* ── True Match Rate Chart ────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <SectionLabel label="True Match Rate — Weekly Trend (Last 26 Weeks)" noMargin />
-          {filter.viewMode === 'split' && (
-            <div className="flex items-center gap-4">
-              {[["Relationship", REL_COLOR], ["Transaction", TRX_COLOR]].map(([n, c]) => (
-                <div key={n} className="flex items-center gap-1.5">
-                  <div className="w-5 h-0.5 rounded" style={{ backgroundColor: c }} />
-                  <span className="text-[11px] text-[#4A5D75]">{n}</span>
-                </div>
-              ))}
+      {filter.viewMode === 'split' ? (
+        <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm overflow-hidden">
+          <div className="grid grid-cols-2">
+            <div className="px-5 py-3 bg-[#E8F1FB] border-r border-b border-[#D0D9E8] flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#0065B3]" />
+              <span className="text-xs font-bold uppercase tracking-widest text-[#003571]">Relationship</span>
+              <span className="ml-auto text-[11px] text-[#0065B3] font-semibold tabular-nums">True Match Rate</span>
             </div>
-          )}
+            <div className="px-5 py-3 bg-[#FFF3E0] border-b border-[#D0D9E8] flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#C45A00]" />
+              <span className="text-xs font-bold uppercase tracking-widest text-[#7A3300]">Transaction</span>
+              <span className="ml-auto text-[11px] text-[#C45A00] font-semibold tabular-nums">True Match Rate</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 divide-x divide-[#D0D9E8]">
+            <div className="p-4">
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                    <XAxis dataKey="weekStart" tickFormatter={fmtWeek}
+                      tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
+                    <YAxis tickFormatter={(v) => fmtPct(v, 2)}
+                      tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={44} />
+                    <RTooltip content={<LineTooltip />} />
+                    {chartSpikes.map((s) => (
+                      <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#0065B3"
+                        strokeDasharray="4 3" strokeWidth={1.5} />
+                    ))}
+                    <Line dataKey="trueMatchRateRel" name="Relationship" stroke={REL_COLOR}
+                      strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                    <XAxis dataKey="weekStart" tickFormatter={fmtWeek}
+                      tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
+                    <YAxis tickFormatter={(v) => fmtPct(v, 2)}
+                      tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={44} />
+                    <RTooltip content={<LineTooltip />} />
+                    {chartSpikes.map((s) => (
+                      <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#C45A00"
+                        strokeDasharray="4 3" strokeWidth={1.5} />
+                    ))}
+                    <Line dataKey="trueMatchRateTrx" name="Transaction" stroke={TRX_COLOR}
+                      strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="h-52">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
-              <XAxis dataKey="weekStart" tickFormatter={fmtWeek}
-                tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
-              <YAxis tickFormatter={(v) => fmtPct(v, 2)}
-                tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={44} />
-              <RTooltip content={<LineTooltip />} />
-              {chartSpikes.map((s) => (
-                <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#0065B3"
-                  strokeDasharray="4 3" strokeWidth={1.5}
-                  label={{ value: "⚡", position: "top", fontSize: 11,
-                    onMouseEnter: () => setHoveredSpike(s.spikeId),
-                    onMouseLeave: () => setHoveredSpike(null) }}
-                />
-              ))}
-              {filter.viewMode === 'split' ? (
-                <>
-                  <Line dataKey="trueMatchRateRel" name="Relationship" stroke={REL_COLOR}
-                    strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                  <Line dataKey="trueMatchRateTrx" name="Transaction" stroke={TRX_COLOR}
-                    strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                </>
-              ) : (
+      ) : (
+        <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <SectionLabel label="True Match Rate — Weekly Trend (Last 26 Weeks)" noMargin />
+          </div>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                <XAxis dataKey="weekStart" tickFormatter={fmtWeek}
+                  tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
+                <YAxis tickFormatter={(v) => fmtPct(v, 2)}
+                  tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={44} />
+                <RTooltip content={<LineTooltip />} />
+                {chartSpikes.map((s) => (
+                  <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#0065B3"
+                    strokeDasharray="4 3" strokeWidth={1.5}
+                    label={{ value: "⚡", position: "top", fontSize: 11,
+                      onMouseEnter: () => setHoveredSpike(s.spikeId),
+                      onMouseLeave: () => setHoveredSpike(null) }}
+                  />
+                ))}
                 <Line dataKey="trueMatchRate" name="True Match Rate" stroke="#003571"
                   strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── QA Setback Rate Chart ────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <SectionLabel label="QA Setback Rate — Weekly (Last 26 Weeks)" noMargin />
-            {filter.viewMode !== 'split' && (
-              <p className="text-[11px] text-[#8699AF] mt-0.5">Stacked by setback reason</p>
-            )}
-          </div>
-          {filter.viewMode === 'split' && (
-            <div className="flex items-center gap-4">
-              {[["Relationship", REL_COLOR], ["Transaction", TRX_COLOR]].map(([n, c]) => (
-                <div key={n} className="flex items-center gap-1.5">
-                  <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: c }} />
-                  <span className="text-[11px] text-[#4A5D75]">{n}</span>
-                </div>
-              ))}
+      {filter.viewMode === 'split' ? (
+        <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm overflow-hidden">
+          <div className="grid grid-cols-2">
+            <div className="px-5 py-3 bg-[#E8F1FB] border-r border-b border-[#D0D9E8] flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#0065B3]" />
+              <span className="text-xs font-bold uppercase tracking-widest text-[#003571]">Relationship</span>
+              <span className="ml-auto text-[11px] text-[#0065B3] font-semibold tabular-nums">QA Setback Rate</span>
             </div>
-          )}
+            <div className="px-5 py-3 bg-[#FFF3E0] border-b border-[#D0D9E8] flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#C45A00]" />
+              <span className="text-xs font-bold uppercase tracking-widest text-[#7A3300]">Transaction</span>
+              <span className="ml-auto text-[11px] text-[#C45A00] font-semibold tabular-nums">QA Setback Rate</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 divide-x divide-[#D0D9E8]">
+            <div className="p-4">
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                    <XAxis dataKey="weekStart" tickFormatter={fmtWeek}
+                      tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
+                    <YAxis tickFormatter={(v) => fmtPct(v, 1)}
+                      tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={44} />
+                    <RTooltip content={<BarTooltip />} />
+                    {chartSpikes.map((s) => (
+                      <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#0065B3"
+                        strokeDasharray="4 3" strokeWidth={1.5} />
+                    ))}
+                    <Bar dataKey="qaSetbackRateRel" name="Relationship" fill={REL_COLOR} radius={[2,2,0,0]} maxBarSize={16} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                    <XAxis dataKey="weekStart" tickFormatter={fmtWeek}
+                      tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
+                    <YAxis tickFormatter={(v) => fmtPct(v, 1)}
+                      tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={44} />
+                    <RTooltip content={<BarTooltip />} />
+                    {chartSpikes.map((s) => (
+                      <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#C45A00"
+                        strokeDasharray="4 3" strokeWidth={1.5} />
+                    ))}
+                    <Bar dataKey="qaSetbackRateTrx" name="Transaction" fill={TRX_COLOR} radius={[2,2,0,0]} maxBarSize={16} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="h-52">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
-              <XAxis dataKey="weekStart" tickFormatter={fmtWeek}
-                tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
-              <YAxis tickFormatter={(v) => fmtPct(v, 1)}
-                tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={44} />
-              <RTooltip content={<BarTooltip />} />
-              {chartSpikes.map((s) => (
-                <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#0065B3"
-                  strokeDasharray="4 3" strokeWidth={1.5} />
-              ))}
-              {filter.viewMode === 'split' ? (
-                <>
-                  <Bar dataKey="qaSetbackRateRel" name="Relationship" fill={REL_COLOR} radius={[0,0,0,0]} maxBarSize={18} />
-                  <Bar dataKey="qaSetbackRateTrx" name="Transaction"  fill={TRX_COLOR} radius={[2,2,0,0]} maxBarSize={18} />
-                </>
-              ) : (
-                <>
-                  <Bar dataKey="sbr_doc"    name="Insufficient Docs"    stackId="s" fill={REASON_COLORS.insufficientDocumentation} radius={[0,0,0,0]} maxBarSize={18} />
-                  <Bar dataKey="sbr_entity" name="Incorrect Entity Match" stackId="s" fill={REASON_COLORS.incorrectEntityMatch}      radius={[0,0,0,0]} maxBarSize={18} />
-                  <Bar dataKey="sbr_policy" name="Policy Misapplication"  stackId="s" fill={REASON_COLORS.policyMisapplication}       radius={[0,0,0,0]} maxBarSize={18} />
-                  <Bar dataKey="sbr_other"  name="Other"                  stackId="s" fill={REASON_COLORS.other}                      radius={[2,2,0,0]} maxBarSize={18} />
-                </>
-              )}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        {filter.viewMode !== 'split' && (
+      ) : (
+        <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <SectionLabel label="QA Setback Rate — Weekly (Last 26 Weeks)" noMargin />
+              <p className="text-[11px] text-[#8699AF] mt-0.5">Stacked by setback reason</p>
+            </div>
+          </div>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                <XAxis dataKey="weekStart" tickFormatter={fmtWeek}
+                  tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
+                <YAxis tickFormatter={(v) => fmtPct(v, 1)}
+                  tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={44} />
+                <RTooltip content={<BarTooltip />} />
+                {chartSpikes.map((s) => (
+                  <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#0065B3"
+                    strokeDasharray="4 3" strokeWidth={1.5} />
+                ))}
+                <Bar dataKey="sbr_doc"    name="Insufficient Docs"     stackId="s" fill={REASON_COLORS.insufficientDocumentation} radius={[0,0,0,0]} maxBarSize={18} />
+                <Bar dataKey="sbr_entity" name="Incorrect Entity Match" stackId="s" fill={REASON_COLORS.incorrectEntityMatch}      radius={[0,0,0,0]} maxBarSize={18} />
+                <Bar dataKey="sbr_policy" name="Policy Misapplication"  stackId="s" fill={REASON_COLORS.policyMisapplication}       radius={[0,0,0,0]} maxBarSize={18} />
+                <Bar dataKey="sbr_other"  name="Other"                  stackId="s" fill={REASON_COLORS.other}                      radius={[2,2,0,0]} maxBarSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
           <div className="flex items-center gap-4 mt-2 justify-center flex-wrap">
             {Object.entries(REASON_LABELS).map(([key, label]) => (
               <div key={key} className="flex items-center gap-1.5">
@@ -392,8 +456,8 @@ export default function DispositionQuality({ filter }: DispositionQualityProps) 
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── Bottom Row — Reason Pie + Review Volume ──────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

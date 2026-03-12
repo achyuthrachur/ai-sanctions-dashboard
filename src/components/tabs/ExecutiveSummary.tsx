@@ -124,173 +124,151 @@ export default function ExecutiveSummary({ filter }: ExecutiveSummaryProps) {
       <AIInsightBanner insight={SYNTHETIC_INSIGHT} mode="prototype" />
 
       {/* ── KPI Row ─────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPICard
+          label="L1 High SLA Compliance"
+          value={kpi.l1hCurr}
+          unit="%"
+          delta={kpi.l1hDelta}
+          deltaLabel="vs prior 7d"
+          status={kpi.l1hCurr >= 95 ? "green" : kpi.l1hCurr >= 90 ? "amber" : "red"}
+          trend={filteredSummaries.slice(-7).map((d) => d.l1HighSlaCompliance * 100)}
+        />
+        <KPICard
+          label="Active Type A Reapply"
+          value={activeRisk}
+          unit="records"
+          status="red"
+          escalationKey={2}
+        />
+        <KPICard
+          label="Overdue OFAC Filings"
+          value={3}
+          unit="accounts"
+          delta={-1}
+          deltaLabel="vs prior month"
+          status="amber"
+          escalationKey={3}
+        />
+        <KPICard
+          label="Maker-Checker Compliance"
+          value={99.8}
+          unit="%"
+          status="green"
+        />
+      </div>
+
+      {/* ── Daily Alert Volume Chart ─────────────────────────────────────────── */}
       {filter.viewMode === 'split' ? (
-        <div className="space-y-3">
-          <SectionLabel label="Alert Volume — 7-Day Average Split" />
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white rounded-lg border-l-4 border-l-[#0065B3] border border-[#D0D9E8] p-4 shadow-sm">
-              <div className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2">Relationship Alerts / Day</div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#0065B3]">
-                  {Math.round(kpi.relAvg).toLocaleString()}
-                </span>
-              </div>
-              <p className="text-[11px] text-[#8699AF] mt-1">38% of total daily volume</p>
+        <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm overflow-hidden">
+          {/* Column headers */}
+          <div className="grid grid-cols-2">
+            <div className="px-5 py-3 bg-[#E8F1FB] border-r border-b border-[#D0D9E8] flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#0065B3]" />
+              <span className="text-xs font-bold uppercase tracking-widest text-[#003571]">Relationship</span>
+              <span className="ml-auto text-[11px] text-[#0065B3] font-semibold tabular-nums">
+                {Math.round(kpi.relAvg).toLocaleString()}/day
+              </span>
             </div>
-            <div className="bg-white rounded-lg border-l-4 border-l-[#C45A00] border border-[#D0D9E8] p-4 shadow-sm">
-              <div className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2">Transaction Alerts / Day</div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#C45A00]">
-                  {Math.round(kpi.trxAvg).toLocaleString()}
-                </span>
-              </div>
-              <p className="text-[11px] text-[#8699AF] mt-1">62% of total daily volume</p>
+            <div className="px-5 py-3 bg-[#FFF3E0] border-b border-[#D0D9E8] flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#C45A00]" />
+              <span className="text-xs font-bold uppercase tracking-widest text-[#7A3300]">Transaction</span>
+              <span className="ml-auto text-[11px] text-[#C45A00] font-semibold tabular-nums">
+                {Math.round(kpi.trxAvg).toLocaleString()}/day
+              </span>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KPICard
-              label="L1 High SLA Compliance"
-              value={kpi.l1hCurr}
-              unit="%"
-              delta={kpi.l1hDelta}
-              deltaLabel="vs prior 7d"
-              status={kpi.l1hCurr >= 95 ? "green" : kpi.l1hCurr >= 90 ? "amber" : "red"}
-            />
-            <KPICard
-              label="Active Type A Reapply"
-              value={activeRisk}
-              unit="records"
-              status="red"
-              escalationKey={2}
-            />
-            <KPICard
-              label="Overdue OFAC Filings"
-              value={3}
-              unit="accounts"
-              delta={-1}
-              deltaLabel="vs prior month"
-              status="amber"
-              escalationKey={3}
-            />
-            <KPICard
-              label="Maker-Checker Compliance"
-              value={99.8}
-              unit="%"
-              status="green"
-            />
+          {/* Two-column area charts */}
+          <div className="grid grid-cols-2 divide-x divide-[#D0D9E8]">
+            <div className="h-48 p-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="relGradExec" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor={REL_COLOR} stopOpacity={0.18} />
+                      <stop offset="95%" stopColor={REL_COLOR} stopOpacity={0}    />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                  <XAxis dataKey="date" tickFormatter={fmtShortDate}
+                    tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={7} />
+                  <YAxis tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
+                    tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={36} />
+                  <RTooltip
+                    content={({ active, payload, label }: any) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <div className="bg-[#0A1628] rounded-lg px-3 py-2.5 shadow-xl border border-[#1E3A5F] text-white text-[12px]">
+                          <div className="font-semibold mb-1.5">{fmtShortDate(label)}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-sm" style={{ background: REL_COLOR }} />
+                            <span className="text-white/60">Relationship:</span>
+                            <span className="font-medium tabular-nums">{Number(payload[0]?.value ?? 0).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                  {chartSpikes.map((s) => (
+                    <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#0065B3"
+                      strokeDasharray="4 3" strokeWidth={1.5} />
+                  ))}
+                  <Area dataKey="relTotal" name="Relationship" type="monotone"
+                    fill="url(#relGradExec)" stroke={REL_COLOR} strokeWidth={2} dot={false}
+                    activeDot={{ r: 4, fill: REL_COLOR, stroke: "#fff", strokeWidth: 2 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="h-48 p-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="trxGradExec" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor={TRX_COLOR} stopOpacity={0.18} />
+                      <stop offset="95%" stopColor={TRX_COLOR} stopOpacity={0}    />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                  <XAxis dataKey="date" tickFormatter={fmtShortDate}
+                    tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={7} />
+                  <YAxis tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
+                    tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={36} />
+                  <RTooltip
+                    content={({ active, payload, label }: any) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <div className="bg-[#0A1628] rounded-lg px-3 py-2.5 shadow-xl border border-[#1E3A5F] text-white text-[12px]">
+                          <div className="font-semibold mb-1.5">{fmtShortDate(label)}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-sm" style={{ background: TRX_COLOR }} />
+                            <span className="text-white/60">Transaction:</span>
+                            <span className="font-medium tabular-nums">{Number(payload[0]?.value ?? 0).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                  {chartSpikes.map((s) => (
+                    <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#C45A00"
+                      strokeDasharray="4 3" strokeWidth={1.5} />
+                  ))}
+                  <Area dataKey="trxTotal" name="Transaction" type="monotone"
+                    fill="url(#trxGradExec)" stroke={TRX_COLOR} strokeWidth={2} dot={false}
+                    activeDot={{ r: 4, fill: TRX_COLOR, stroke: "#fff", strokeWidth: 2 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KPICard
-            label="L1 High SLA Compliance"
-            value={kpi.l1hCurr}
-            unit="%"
-            delta={kpi.l1hDelta}
-            deltaLabel="vs prior 7d"
-            status={kpi.l1hCurr >= 95 ? "green" : kpi.l1hCurr >= 90 ? "amber" : "red"}
-            trend={filteredSummaries.slice(-7).map((d) => d.l1HighSlaCompliance * 100)}
-          />
-          <KPICard
-            label="Active Type A Reapply"
-            value={activeRisk}
-            unit="records"
-            status="red"
-            escalationKey={2}
-          />
-          <KPICard
-            label="Overdue OFAC Filings"
-            value={3}
-            unit="accounts"
-            delta={-1}
-            deltaLabel="vs prior month"
-            status="amber"
-            escalationKey={3}
-          />
-          <KPICard
-            label="Maker-Checker Compliance"
-            value={99.8}
-            unit="%"
-            status="green"
-          />
-        </div>
-      )}
-
-      {/* ── Daily Alert Volume Chart ─────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
+        <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75]">
               Daily Alert Volume — Last 60 Days
             </h3>
-            {filter.viewMode === 'split' && (
-              <p className="text-[11px] text-[#8699AF] mt-0.5">Relationship vs Transaction split</p>
-            )}
           </div>
-          {filter.viewMode === 'split' && (
-            <div className="flex items-center gap-4">
-              {[["Total", "#D0D9E8"], ["Relationship", REL_COLOR], ["Transaction", TRX_COLOR]].map(([n, c]) => (
-                <div key={n} className="flex items-center gap-1.5">
-                  <div className="w-5 h-0.5 rounded" style={{ backgroundColor: c }} />
-                  <span className="text-[11px] text-[#4A5D75]">{n}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            {filter.viewMode === 'split' ? (
-              <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="relGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={REL_COLOR} stopOpacity={0.18} />
-                    <stop offset="95%" stopColor={REL_COLOR} stopOpacity={0}    />
-                  </linearGradient>
-                  <linearGradient id="trxGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={TRX_COLOR} stopOpacity={0.18} />
-                    <stop offset="95%" stopColor={TRX_COLOR} stopOpacity={0}    />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={fmtShortDate}
-                  tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={7} />
-                <YAxis tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
-                  tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={36} />
-                <RTooltip
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload?.length) return null;
-                    return (
-                      <div className="bg-[#0A1628] rounded-lg px-3 py-2.5 shadow-xl border border-[#1E3A5F] text-white text-[12px]">
-                        <div className="font-semibold mb-1.5">{fmtShortDate(label)}</div>
-                        {payload.map((p: any) => p.dataKey !== 'totalAlerts' && (
-                          <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
-                            <div className="w-2 h-2 rounded-sm" style={{ background: p.stroke }} />
-                            <span className="text-white/60">{p.name}:</span>
-                            <span className="font-medium tabular-nums">{Number(p.value).toLocaleString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }}
-                />
-                {chartSpikes.map((s) => (
-                  <ReferenceLine key={s.spikeId} x={s.startDate} stroke="#0065B3"
-                    strokeDasharray="4 3" strokeWidth={1.5} />
-                ))}
-                {/* Background total area */}
-                <Area dataKey="totalAlerts" name="Total" type="monotone"
-                  fill="#F0F3F8" stroke="#D0D9E8" fillOpacity={0.5} strokeWidth={1} dot={false} />
-                {/* Relationship line */}
-                <Area dataKey="relTotal" name="Relationship" type="monotone"
-                  fill="url(#relGrad)" stroke={REL_COLOR} strokeWidth={2} dot={false}
-                  activeDot={{ r: 4, fill: REL_COLOR, stroke: "#fff", strokeWidth: 2 }} />
-                {/* Transaction line */}
-                <Area dataKey="trxTotal" name="Transaction" type="monotone"
-                  fill="url(#trxGrad)" stroke={TRX_COLOR} strokeWidth={2} dot={false}
-                  activeDot={{ r: 4, fill: TRX_COLOR, stroke: "#fff", strokeWidth: 2 }} />
-              </AreaChart>
-            ) : (
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="totalGrad" x1="0" y1="0" x2="0" y2="1">
@@ -304,7 +282,7 @@ export default function ExecutiveSummary({ filter }: ExecutiveSummaryProps) {
                 <YAxis tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
                   tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={36} />
                 <RTooltip
-                  content={({ active, payload, label }) => {
+                  content={({ active, payload, label }: any) => {
                     if (!active || !payload?.length) return null;
                     return (
                       <div className="bg-[#0A1628] rounded-lg px-3 py-2.5 shadow-xl border border-[#1E3A5F] text-white text-[12px]">
@@ -326,10 +304,10 @@ export default function ExecutiveSummary({ filter }: ExecutiveSummaryProps) {
                   fill="url(#totalGrad)" stroke="#0065B3" strokeWidth={2} dot={false}
                   activeDot={{ r: 4, fill: "#0065B3", stroke: "#fff", strokeWidth: 2 }} />
               </AreaChart>
-            )}
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Bottom row: Disposition trend + Reapply exposure ────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

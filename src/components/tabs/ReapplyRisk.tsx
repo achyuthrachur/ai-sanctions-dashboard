@@ -400,76 +400,127 @@ export default function ReapplyRisk({ filter }: ReapplyRiskProps) {
           />
         </div>
 
-        {/* ── Charts + Context Row ────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-          {/* Pie chart */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-card flex flex-col">
-            <div className="text-sm font-semibold text-text-primary mb-0.5">Inventory Distribution</div>
-            <div className="text-xs text-text-muted mb-3">
-              {filter.viewMode === 'split' ? '340 records by alert type' : '340 records by risk type'}
+        {/* ── Split mode: full-width 2-column pie card above the grid ──────── */}
+        {filter.viewMode === 'split' && (
+          <div className="bg-white rounded-lg border border-gray-200 shadow-card overflow-hidden">
+            {/* Column headers */}
+            <div className="grid grid-cols-2">
+              <div className="px-5 py-3 bg-[#E8F1FB] border-r border-b border-[#D0D9E8] flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#0065B3]" />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#003571]">Relationship (Type A)</span>
+                <span className="ml-auto text-[11px] text-[#0065B3] font-semibold tabular-nums">{REAPPLY_SUMMARY.typeA} records</span>
+              </div>
+              <div className="px-5 py-3 bg-[#FFF3E0] border-b border-[#D0D9E8] flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#C45A00]" />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#7A3300]">Transaction (Type B/C/D)</span>
+                <span className="ml-auto text-[11px] text-[#C45A00] font-semibold tabular-nums">
+                  {REAPPLY_SUMMARY.typeB + REAPPLY_SUMMARY.typeC + REAPPLY_SUMMARY.typeD} records
+                </span>
+              </div>
             </div>
-            {filter.viewMode === 'split' ? (() => {
-              const splitPieData = [
-                { name: 'Relationship (Type A)', value: REAPPLY_SUMMARY.typeA, fill: REL_COLOR },
-                { name: 'Transaction (Type B/C/D)', value: REAPPLY_SUMMARY.typeB + REAPPLY_SUMMARY.typeC + REAPPLY_SUMMARY.typeD, fill: TRX_COLOR },
-              ];
-              return (
-                <>
-                  <ResponsiveContainer width="100%" height={160}>
+            {/* Two-column pie charts */}
+            <div className="grid grid-cols-2 divide-x divide-[#D0D9E8]">
+              <div className="p-5">
+                <div className="h-36">
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={splitPieData} cx="50%" cy="50%" innerRadius={45} outerRadius={72}
-                        dataKey="value" paddingAngle={2}>
-                        {splitPieData.map((entry, i) => (
-                          <Cell key={i} fill={entry.fill} stroke="white" strokeWidth={2} />
-                        ))}
+                      <Pie
+                        data={[{ name: 'Type A', value: REAPPLY_SUMMARY.typeA, fill: REL_COLOR }]}
+                        cx="50%" cy="50%" innerRadius={30} outerRadius={52}
+                        dataKey="value" paddingAngle={0}
+                      >
+                        <Cell fill={REL_COLOR} stroke="white" strokeWidth={2} />
                       </Pie>
                       <Tooltip content={<PieTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="space-y-1.5 mt-2">
-                    {splitPieData.map((d) => (
-                      <div key={d.name} className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1.5 text-text-secondary">
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.fill }} />
-                          {d.name}
-                        </span>
-                        <span className="font-semibold text-text-primary">{d.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              );
-            })() : (
-              <>
-                <ResponsiveContainer width="100%" height={160}>
-                  <PieChart>
-                    <Pie data={PIE_DATA} cx="50%" cy="50%" innerRadius={45} outerRadius={72}
-                      dataKey="value" paddingAngle={2}>
-                      {PIE_DATA.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} stroke="white" strokeWidth={2} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<PieTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="space-y-1.5 mt-2">
-                  {PIE_DATA.map((d) => (
-                    <div key={d.name} className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-1.5 text-text-secondary">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }} />
-                        {d.name}
-                      </span>
-                      <span className="font-semibold text-text-primary">{d.value}</span>
-                    </div>
-                  ))}
                 </div>
-              </>
-            )}
+                <div className="space-y-1.5 mt-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-text-secondary">Count</span>
+                    <span className="font-semibold text-text-primary">{REAPPLY_SUMMARY.typeA}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-text-secondary">Active Risk</span>
+                    <span className="font-semibold text-[#E61030]">22</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-text-secondary">Total Exposure</span>
+                    <span className="font-semibold text-[#E61030]">$4.1M</span>
+                  </div>
+                </div>
+              </div>
+              <div className="p-5">
+                <div className="h-36">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[{ name: 'Type B/C/D', value: REAPPLY_SUMMARY.typeB + REAPPLY_SUMMARY.typeC + REAPPLY_SUMMARY.typeD, fill: TRX_COLOR }]}
+                        cx="50%" cy="50%" innerRadius={30} outerRadius={52}
+                        dataKey="value" paddingAngle={0}
+                      >
+                        <Cell fill={TRX_COLOR} stroke="white" strokeWidth={2} />
+                      </Pie>
+                      <Tooltip content={<PieTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-1.5 mt-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-text-secondary">Count</span>
+                    <span className="font-semibold text-text-primary">{REAPPLY_SUMMARY.typeB + REAPPLY_SUMMARY.typeC + REAPPLY_SUMMARY.typeD}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-text-secondary">Active Risk</span>
+                    <span className="font-semibold text-[#C45A00]">{REAPPLY_SUMMARY.typeB}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-text-secondary">Total Exposure</span>
+                    <span className="font-semibold text-[#C45A00]">Corridor risk</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+        )}
+
+        {/* ── Charts + Context Row ────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+          {/* Pie chart — combined mode only */}
+          {filter.viewMode !== 'split' && (
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-card flex flex-col">
+            <div className="text-sm font-semibold text-text-primary mb-0.5">Inventory Distribution</div>
+            <div className="text-xs text-text-muted mb-3">340 records by risk type</div>
+            <>
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie data={PIE_DATA} cx="50%" cy="50%" innerRadius={45} outerRadius={72}
+                    dataKey="value" paddingAngle={2}>
+                    {PIE_DATA.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} stroke="white" strokeWidth={2} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<PieTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-1.5 mt-2">
+                {PIE_DATA.map((d) => (
+                  <div key={d.name} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-text-secondary">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }} />
+                      {d.name}
+                    </span>
+                    <span className="font-semibold text-text-primary">{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          </div>
+          )}
 
           {/* Process gap explainer — the "what is this" context card */}
-          <div className="lg:col-span-2 bg-white rounded-lg border border-[#E61030]/25 p-5 shadow-card">
+          <div className={`${filter.viewMode === 'split' ? 'lg:col-span-3' : 'lg:col-span-2'} bg-white rounded-lg border border-[#E61030]/25 p-5 shadow-card`}>
             <div className="flex items-center gap-2 mb-3">
               <FileWarning size={15} className="text-[#E61030]" />
               <span className="text-sm font-semibold text-[#B00D26]">Understanding the Process Gap</span>

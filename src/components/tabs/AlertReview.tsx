@@ -463,153 +463,230 @@ export default function AlertReview({ filters }: AlertReviewProps) {
             </div>
           </div>
 
-          {/* ── Alert Count Split (split mode only) ─────────────────────────── */}
-          {filters.viewMode === 'split' && (
-            <div>
-              <SectionLabel label={`${activeTier} Alert Volume Split — 7-Day Average`} />
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white rounded-lg border-l-4 border-l-[#0065B3] border border-[#D0D9E8] p-4 shadow-sm">
-                  <div className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2">Relationship Alerts</div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#0065B3]">
-                      {Math.round(avg(filteredSummaries.slice(-7).map(d =>
-                        activeTier === 'L1' ? d.l1CountRel :
-                        activeTier === 'L2' ? d.l2CountRel : d.l3CountRel
-                      ))).toLocaleString()}
-                    </span>
-                    <span className="text-sm text-[#4A5D75]">/ day avg</span>
+          {/* ── Section 2 — Daily Alert Volume Chart ────────────────────────── */}
+          {filters.viewMode === 'split' ? (
+            <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm overflow-hidden">
+              {/* Spike annotation popover */}
+              <AnimatePresence>
+                {hoveredSpike && (
+                  <div className="px-5 pt-4">
+                    <SpikeInfoPanel spike={hoveredSpike} />
+                  </div>
+                )}
+              </AnimatePresence>
+
+              {/* Column headers */}
+              <div className="grid grid-cols-2">
+                <div className="px-5 py-3 bg-[#E8F1FB] border-r border-b border-[#D0D9E8] flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#0065B3]" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#003571]">Relationship</span>
+                  <span className="ml-auto text-[11px] text-[#0065B3] font-semibold tabular-nums">
+                    {Math.round(avg(filteredSummaries.slice(-7).map(d =>
+                      activeTier === 'L1' ? d.l1CountRel :
+                      activeTier === 'L2' ? d.l2CountRel : d.l3CountRel
+                    ))).toLocaleString()}/day avg
+                  </span>
+                </div>
+                <div className="px-5 py-3 bg-[#FFF3E0] border-b border-[#D0D9E8] flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#C45A00]" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#7A3300]">Transaction</span>
+                  <span className="ml-auto text-[11px] text-[#C45A00] font-semibold tabular-nums">
+                    {Math.round(avg(filteredSummaries.slice(-7).map(d =>
+                      activeTier === 'L1' ? d.l1CountTrx :
+                      activeTier === 'L2' ? d.l2CountTrx : d.l3CountTrx
+                    ))).toLocaleString()}/day avg
+                  </span>
+                </div>
+              </div>
+
+              {/* Two-column charts */}
+              <div className="grid grid-cols-2 divide-x divide-[#D0D9E8]">
+                <div className="p-4">
+                  <div className="h-44">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={chartData}
+                        margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                        onClick={handleBarClick}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={fmtShortDate}
+                          tick={{ fill: '#8699AF', fontSize: 10, fontFamily: 'IBM Plex Sans' }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval={4}
+                        />
+                        <YAxis
+                          tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
+                          tick={{ fill: '#8699AF', fontSize: 10, fontFamily: 'IBM Plex Sans' }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={36}
+                        />
+                        <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,101,179,0.06)' }} />
+                        {chartSpikes.map(spike => (
+                          <ReferenceLine
+                            key={spike.spikeId}
+                            x={spike.startDate}
+                            stroke="#0065B3"
+                            strokeDasharray="4 3"
+                            strokeWidth={1.5}
+                            label={
+                              <SpikeRefLabel
+                                spikeId={spike.spikeId}
+                                onHover={setHoveredSpikeId}
+                              />
+                            }
+                          />
+                        ))}
+                        {activeTier === 'L1' && <Bar dataKey="l1Rel" name="L1 Relationship" fill={REL_COLOR} radius={[2,2,0,0]} maxBarSize={20} />}
+                        {activeTier === 'L2' && <Bar dataKey="l2Rel" name="L2 Relationship" fill={REL_COLOR} radius={[2,2,0,0]} maxBarSize={20} />}
+                        {activeTier === 'L3' && <Bar dataKey="l3Rel" name="L3 Relationship" fill={REL_COLOR} radius={[2,2,0,0]} maxBarSize={20} />}
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
-                <div className="bg-white rounded-lg border-l-4 border-l-[#C45A00] border border-[#D0D9E8] p-4 shadow-sm">
-                  <div className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2">Transaction Alerts</div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#C45A00]">
-                      {Math.round(avg(filteredSummaries.slice(-7).map(d =>
-                        activeTier === 'L1' ? d.l1CountTrx :
-                        activeTier === 'L2' ? d.l2CountTrx : d.l3CountTrx
-                      ))).toLocaleString()}
-                    </span>
-                    <span className="text-sm text-[#4A5D75]">/ day avg</span>
+                <div className="p-4">
+                  <div className="h-44">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={chartData}
+                        margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                        onClick={handleBarClick}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={fmtShortDate}
+                          tick={{ fill: '#8699AF', fontSize: 10, fontFamily: 'IBM Plex Sans' }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval={4}
+                        />
+                        <YAxis
+                          tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
+                          tick={{ fill: '#8699AF', fontSize: 10, fontFamily: 'IBM Plex Sans' }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={36}
+                        />
+                        <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(196,90,0,0.06)' }} />
+                        {chartSpikes.map(spike => (
+                          <ReferenceLine
+                            key={spike.spikeId}
+                            x={spike.startDate}
+                            stroke="#C45A00"
+                            strokeDasharray="4 3"
+                            strokeWidth={1.5}
+                            label={
+                              <SpikeRefLabel
+                                spikeId={spike.spikeId}
+                                onHover={setHoveredSpikeId}
+                              />
+                            }
+                          />
+                        ))}
+                        {activeTier === 'L1' && <Bar dataKey="l1Trx" name="L1 Transaction" fill={TRX_COLOR} radius={[2,2,0,0]} maxBarSize={20} />}
+                        {activeTier === 'L2' && <Bar dataKey="l2Trx" name="L2 Transaction" fill={TRX_COLOR} radius={[2,2,0,0]} maxBarSize={20} />}
+                        {activeTier === 'L3' && <Bar dataKey="l3Trx" name="L3 Transaction" fill={TRX_COLOR} radius={[2,2,0,0]} maxBarSize={20} />}
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
+              <div className="flex items-center justify-between mb-1">
+                <SectionLabel label={`${activeTier} Daily Alert Volume — Last 30 Days`} noMargin />
+                <span className="text-[11px] text-[#8699AF]">Click a bar to drill down</span>
+              </div>
+
+              {/* Spike annotation popover */}
+              <AnimatePresence>
+                {hoveredSpike && <SpikeInfoPanel spike={hoveredSpike} />}
+              </AnimatePresence>
+
+              <div className="h-56 mt-3">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                    onClick={handleBarClick}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={fmtShortDate}
+                      tick={{ fill: '#8699AF', fontSize: 10, fontFamily: 'IBM Plex Sans' }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={4}
+                    />
+                    <YAxis
+                      tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
+                      tick={{ fill: '#8699AF', fontSize: 10, fontFamily: 'IBM Plex Sans' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={36}
+                    />
+                    <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,101,179,0.06)' }} />
+
+                    {/* Spike reference lines */}
+                    {chartSpikes.map(spike => (
+                      <ReferenceLine
+                        key={spike.spikeId}
+                        x={spike.startDate}
+                        stroke="#0065B3"
+                        strokeDasharray="4 3"
+                        strokeWidth={1.5}
+                        label={
+                          <SpikeRefLabel
+                            spikeId={spike.spikeId}
+                            onHover={setHoveredSpikeId}
+                          />
+                        }
+                      />
+                    ))}
+
+                    {/* L1: stacked High/Med/Low */}
+                    {activeTier === 'L1' && (
+                      <>
+                        <Bar dataKey="l1High"   name="High"   stackId="a" fill={BAR_COLORS.l1High}   radius={[0,0,0,0]} maxBarSize={20} />
+                        <Bar dataKey="l1Medium" name="Medium" stackId="a" fill={BAR_COLORS.l1Medium} radius={[0,0,0,0]} maxBarSize={20} />
+                        <Bar dataKey="l1Low"    name="Low"    stackId="a" fill={BAR_COLORS.l1Low}    radius={[2,2,0,0]} maxBarSize={20} />
+                      </>
+                    )}
+                    {/* L2 */}
+                    {activeTier === 'L2' && (
+                      <Bar dataKey="l2Total" name="L2 Alerts" fill={BAR_COLORS.total} radius={[2,2,0,0]} maxBarSize={20} />
+                    )}
+                    {/* L3 */}
+                    {activeTier === 'L3' && (
+                      <Bar dataKey="l3Total" name="L3 Alerts" fill={BAR_COLORS.total} radius={[2,2,0,0]} maxBarSize={20} />
+                    )}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Chart legend */}
+              {activeTier === 'L1' && (
+                <div className="flex items-center gap-4 mt-2 justify-center">
+                  {[['High', BAR_COLORS.l1High], ['Medium', BAR_COLORS.l1Medium], ['Low', BAR_COLORS.l1Low]].map(([name, color]) => (
+                    <div key={name} className="flex items-center gap-1.5">
+                      <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: color }} />
+                      <span className="text-[11px] text-[#4A5D75]">{name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-
-          {/* ── Section 2 — Daily Alert Volume Chart ────────────────────────── */}
-          <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
-            <div className="flex items-center justify-between mb-1">
-              <SectionLabel label={`${activeTier} Daily Alert Volume — Last 30 Days`} noMargin />
-              <span className="text-[11px] text-[#8699AF]">Click a bar to drill down</span>
-            </div>
-
-            {/* Spike annotation popover */}
-            <AnimatePresence>
-              {hoveredSpike && <SpikeInfoPanel spike={hoveredSpike} />}
-            </AnimatePresence>
-
-            <div className="h-56 mt-3">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartData}
-                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-                  onClick={handleBarClick}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={fmtShortDate}
-                    tick={{ fill: '#8699AF', fontSize: 10, fontFamily: 'IBM Plex Sans' }}
-                    axisLine={false}
-                    tickLine={false}
-                    interval={4}
-                  />
-                  <YAxis
-                    tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
-                    tick={{ fill: '#8699AF', fontSize: 10, fontFamily: 'IBM Plex Sans' }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={36}
-                  />
-                  <RTooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,101,179,0.06)' }} />
-
-                  {/* Spike reference lines */}
-                  {chartSpikes.map(spike => (
-                    <ReferenceLine
-                      key={spike.spikeId}
-                      x={spike.startDate}
-                      stroke="#0065B3"
-                      strokeDasharray="4 3"
-                      strokeWidth={1.5}
-                      label={
-                        <SpikeRefLabel
-                          spikeId={spike.spikeId}
-                          onHover={setHoveredSpikeId}
-                        />
-                      }
-                    />
-                  ))}
-
-                  {/* L1: stacked High/Med/Low (combined) or Rel/Trx pairs (split) */}
-                  {activeTier === 'L1' && filters.viewMode !== 'split' && (
-                    <>
-                      <Bar dataKey="l1High"   name="High"   stackId="a" fill={BAR_COLORS.l1High}   radius={[0,0,0,0]} maxBarSize={20} />
-                      <Bar dataKey="l1Medium" name="Medium" stackId="a" fill={BAR_COLORS.l1Medium} radius={[0,0,0,0]} maxBarSize={20} />
-                      <Bar dataKey="l1Low"    name="Low"    stackId="a" fill={BAR_COLORS.l1Low}    radius={[2,2,0,0]} maxBarSize={20} />
-                    </>
-                  )}
-                  {activeTier === 'L1' && filters.viewMode === 'split' && (
-                    <>
-                      <Bar dataKey="l1Rel" name="L1 Relationship" stackId="l1" fill={REL_COLOR} radius={[0,0,0,0]} maxBarSize={20} />
-                      <Bar dataKey="l1Trx" name="L1 Transaction"  stackId="l1" fill={TRX_COLOR} radius={[2,2,0,0]} maxBarSize={20} />
-                    </>
-                  )}
-                  {/* L2 */}
-                  {activeTier === 'L2' && filters.viewMode !== 'split' && (
-                    <Bar dataKey="l2Total" name="L2 Alerts" fill={BAR_COLORS.total} radius={[2,2,0,0]} maxBarSize={20} />
-                  )}
-                  {activeTier === 'L2' && filters.viewMode === 'split' && (
-                    <>
-                      <Bar dataKey="l2Rel" name="L2 Relationship" stackId="l2" fill={REL_COLOR} radius={[0,0,0,0]} maxBarSize={20} />
-                      <Bar dataKey="l2Trx" name="L2 Transaction"  stackId="l2" fill={TRX_COLOR} radius={[2,2,0,0]} maxBarSize={20} />
-                    </>
-                  )}
-                  {/* L3 */}
-                  {activeTier === 'L3' && filters.viewMode !== 'split' && (
-                    <Bar dataKey="l3Total" name="L3 Alerts" fill={BAR_COLORS.total} radius={[2,2,0,0]} maxBarSize={20} />
-                  )}
-                  {activeTier === 'L3' && filters.viewMode === 'split' && (
-                    <>
-                      <Bar dataKey="l3Rel" name="L3 Relationship" stackId="l3" fill={REL_COLOR} radius={[0,0,0,0]} maxBarSize={20} />
-                      <Bar dataKey="l3Trx" name="L3 Transaction"  stackId="l3" fill={TRX_COLOR} radius={[2,2,0,0]} maxBarSize={20} />
-                    </>
-                  )}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Chart legend */}
-            {filters.viewMode === 'split' ? (
-              <div className="flex items-center gap-4 mt-2 justify-center">
-                {[['Relationship', REL_COLOR], ['Transaction', TRX_COLOR]].map(([name, color]) => (
-                  <div key={name} className="flex items-center gap-1.5">
-                    <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: color }} />
-                    <span className="text-[11px] text-[#4A5D75]">{name}</span>
-                  </div>
-                ))}
-              </div>
-            ) : activeTier === 'L1' && (
-              <div className="flex items-center gap-4 mt-2 justify-center">
-                {[['High', BAR_COLORS.l1High], ['Medium', BAR_COLORS.l1Medium], ['Low', BAR_COLORS.l1Low]].map(([name, color]) => (
-                  <div key={name} className="flex items-center gap-1.5">
-                    <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: color }} />
-                    <span className="text-[11px] text-[#4A5D75]">{name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* ── Section 3 — SLA Heatmap ─────────────────────────────────────── */}
           <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
