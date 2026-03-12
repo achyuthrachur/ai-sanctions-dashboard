@@ -377,7 +377,7 @@ export default function AlertReview({ filters }: AlertReviewProps) {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans p-6 max-w-[1440px] mx-auto">
 
       {/* ── Sub-nav ────────────────────────────────────────────────────────── */}
       <TierTabBar />
@@ -709,17 +709,17 @@ export default function AlertReview({ filters }: AlertReviewProps) {
             </div>
 
             {/* Day headers */}
-            <div className="grid grid-cols-7 gap-1 mb-1 pl-0">
+            <div className="grid gap-1 mb-1" style={{ gridTemplateColumns: 'repeat(7, 1.25rem)' }}>
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-                <div key={i} className="text-center text-[10px] text-[#8699AF] font-medium">{d}</div>
+                <div key={i} className="w-5 text-center text-[10px] text-[#8699AF] font-medium">{d}</div>
               ))}
             </div>
 
             {/* Heatmap grid */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(7, 1.25rem)' }}>
               {/* Padding for first week */}
               {Array.from({ length: heatmapPadding }).map((_, i) => (
-                <div key={`pad-${i}`} className="aspect-square" />
+                <div key={`pad-${i}`} className="w-5 h-5" />
               ))}
               {heatmapData.map(cell => {
                 const thr = activeTier === 'L1' ? thrL1H
@@ -731,7 +731,7 @@ export default function AlertReview({ filters }: AlertReviewProps) {
                     key={cell.date}
                     title={`${cell.date}: ${fmtPct(cell.value)}${cell.spikeFlag ? ' ⚡ ' + cell.spikeId : ''}`}
                     onClick={() => handleHeatmapClick(cell.date, cell.value)}
-                    className="aspect-square rounded-sm transition-transform hover:scale-110 hover:ring-2 hover:ring-[#0065B3] hover:ring-offset-1 focus:outline-none"
+                    className="w-5 h-5 rounded-sm transition-transform hover:scale-110 hover:ring-2 hover:ring-[#0065B3] hover:ring-offset-1 focus:outline-none"
                     style={{ backgroundColor: color }}
                   />
                 )
