@@ -1,347 +1,365 @@
-"use client";
-import { useMemo } from "react";
+'use client';
+
+import { useMemo, useState } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip as RTooltip, ResponsiveContainer, ReferenceLine,
-} from "recharts";
-import { Info, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
-import { LIST_FEED_DAILY } from "@/data/synthetic/listFeeds";
-import type { FilterState, FeedName, FeedStatus } from "@/types/index";
+  LineChart, Line, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from 'recharts';
+import { AlertCircle, CheckCircle, XCircle, MinusCircle } from 'lucide-react';
+import { KPICard } from '@/components/common/KPICard';
+import { SpikeAnnotation } from '@/components/common/SpikeAnnotation';
+import { LIST_FEED_DAILY, LIST_FEED_SUMMARY } from '@/data/synthetic/listFeeds';
+import { SPIKE_EVENTS } from '@/data/synthetic/spikes';
+import type { FilterState, ListFeedRecord, FeedName } from '@/types/index';
+import { TODAY } from '@/lib/utils';
+
+const FEED_COLORS: Record<FeedName, string> = {
+  OFAC_SDN:          '#0065B3',
+  OFAC_CONSOLIDATED: '#004A8F',
+  UN_SC:             '#C45A00',
+  EU_CONSOLIDATED:   '#1A6632',
+  HMT:               '#8699AF',
+  ACUITY_AGGREGATED: '#E61030',
+};
+
+const FEED_SHORT: Record<FeedName, string> = {
+  OFAC_SDN:          'OFAC SDN',
+  OFAC_CONSOLIDATED: 'OFAC CONS',
+  UN_SC:             'UN SC',
+  EU_CONSOLIDATED:   'EU CONS',
+  HMT:               'HMT',
+  ACUITY_AGGREGATED: 'ACUITY',
+};
+
+const FEEDS: FeedName[] = [
+  'OFAC_SDN', 'OFAC_CONSOLIDATED', 'UN_SC', 'EU_CONSOLIDATED', 'HMT', 'ACUITY_AGGREGATED',
+];
+
+function StatusIcon({ status }: { status: ListFeedRecord['status'] }) {
+  if (status === 'success') return <CheckCircle className="w-4 h-4 text-[#1A6632]" />;
+  if (status === 'partial_failure') return <MinusCircle className="w-4 h-4 text-[#C45A00]" />;
+  return <XCircle className="w-4 h-4 text-[#E61030]" />;
+}
 
 interface ListFeedHealthProps {
   filter: FilterState;
 }
 
-const FEED_COLORS: Record<FeedName, string> = {
-  OFAC_SDN:          "#0065B3",
-  OFAC_CONSOLIDATED: "#003571",
-  UN_SC:             "#1A6632",
-  EU_CONSOLIDATED:   "#C45A00",
-  HMT:               "#7C3AED",
-  ACUITY_AGGREGATED: "#E61030",
-};
-
-const FEED_LABELS: Record<FeedName, string> = {
-  OFAC_SDN:          "OFAC SDN",
-  OFAC_CONSOLIDATED: "OFAC Consol.",
-  UN_SC:             "UN SC",
-  EU_CONSOLIDATED:   "EU Consol.",
-  HMT:               "HMT",
-  ACUITY_AGGREGATED: "Acuity",
-};
-
-const FEED_LABELS_FULL: Record<FeedName, string> = {
-  OFAC_SDN:          "OFAC SDN",
-  OFAC_CONSOLIDATED: "OFAC Consolidated",
-  UN_SC:             "UN Security Council",
-  EU_CONSOLIDATED:   "EU Consolidated",
-  HMT:               "HMT",
-  ACUITY_AGGREGATED: "Acuity Aggregated",
-};
-
-const FEED_NAMES: FeedName[] = [
-  "OFAC_SDN","OFAC_CONSOLIDATED","UN_SC","EU_CONSOLIDATED","HMT","ACUITY_AGGREGATED",
-];
-
-function fmtWeek(iso: string) {
-  return new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", {
-    month: "short", year: "2-digit", timeZone: "UTC",
-  });
-}
-
-function fmtDateShort(iso: string) {
-  return new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", {
-    month: "short", day: "numeric", year: "2-digit", timeZone: "UTC",
-  });
-}
-
-function mondayOf(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  const dow = d.getUTCDay();
-  d.setUTCDate(d.getUTCDate() + (dow === 0 ? -6 : 1 - dow));
-  return d.toISOString().slice(0, 10);
-}
-
-function SectionLabel({ label, sub }: { label: string; sub?: string }) {
-  return (
-    <div className="mb-4">
-      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75]">{label}</h3>
-      {sub && <p className="text-[11px] text-[#8699AF] mt-0.5">{sub}</p>}
-    </div>
-  );
-}
-
-function StatusChip({ status }: { status: FeedStatus }) {
-  if (status === "success")
-    return <span className="flex items-center gap-1 text-[#1A6632] font-semibold"><CheckCircle2 size={11} /> Healthy</span>;
-  if (status === "partial_failure")
-    return <span className="flex items-center gap-1 text-[#C45A00] font-semibold"><AlertTriangle size={11} /> Degraded</span>;
-  return <span className="flex items-center gap-1 text-[#E61030] font-semibold"><XCircle size={11} /> Failed</span>;
+// Fallback date range covering the full dataset when no filter is set
+function getRange(filter: FilterState): { start: string; end: string } {
+  if (filter.dateRange) return filter.dateRange;
+  return { start: '2023-10-01', end: TODAY };
 }
 
 export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
+  const [logFilter, setLogFilter] = useState<'all' | 'failures'>('all');
 
-  const filteredRecords = useMemo(() => {
-    if (!filter.dateRange) return LIST_FEED_DAILY;
-    return LIST_FEED_DAILY.filter(
-      (r) => r.date >= filter.dateRange!.start && r.date <= filter.dateRange!.end
-    );
+  // Last record per feed (always from full dataset — shows current status)
+  const latestByFeed = useMemo(() => {
+    const result: Partial<Record<FeedName, ListFeedRecord>> = {};
+    for (const rec of LIST_FEED_DAILY) {
+      result[rec.feedName] = rec;
+    }
+    return result;
+  }, []);
+
+  // Latency chart — filtered to selected date range
+  const latencyData = useMemo(() => {
+    const { start, end } = getRange(filter);
+    const filtered = LIST_FEED_DAILY.filter(r => r.date >= start && r.date <= end);
+    const byDate: Record<string, Record<string, number | null>> = {};
+    filtered.forEach(r => {
+      if (!byDate[r.date]) byDate[r.date] = {};
+      byDate[r.date][r.feedName] = r.status !== 'success' ? null : r.latencyMinutes;
+    });
+    return Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, feeds]) => ({ date: date.slice(5), fullDate: date, ...feeds }));
   }, [filter.dateRange]);
 
-  // Per-feed KPI tile data
-  const feedKPIs = useMemo(() => {
-    return FEED_NAMES.map((name) => {
-      const recs = filteredRecords.filter((r) => r.feedName === name);
-      if (!recs.length) return { name, count: 0, latency: 0, uptime: 100, status: "success" as FeedStatus };
-      const latest = recs[recs.length - 1];
-      const successCount = recs.filter((r) => r.status === "success").length;
-      const uptime = Math.round((successCount / recs.length) * 10000) / 100;
-      const avgLatency = Math.round(recs.reduce((s, r) => s + r.latencyMinutes, 0) / recs.length);
-      return { name, count: latest.recordCount, latency: avgLatency, uptime, status: latest.status };
+  // Delta tracker — filtered to date range
+  const deltaData = useMemo(() => {
+    const { start, end } = getRange(filter);
+    const byDate: Record<string, number> = {};
+    LIST_FEED_DAILY.filter(r => r.date >= start && r.date <= end).forEach(r => {
+      byDate[r.date] = (byDate[r.date] ?? 0) + r.deltaRecords;
     });
-  }, [filteredRecords]);
+    return Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, delta]) => ({ date: date.slice(5), fullDate: date, delta }));
+  }, [filter.dateRange]);
 
-  // Weekly avg latency per feed — last 26 weeks
-  const weeklyLatency = useMemo(() => {
-    const map: Record<string, Record<FeedName, { sum: number; n: number }>> = {};
-    filteredRecords.forEach((r) => {
-      const wk = mondayOf(r.date);
-      if (!map[wk]) map[wk] = {} as any;
-      if (!map[wk][r.feedName]) map[wk][r.feedName] = { sum: 0, n: 0 };
-      map[wk][r.feedName].sum += r.latencyMinutes;
-      map[wk][r.feedName].n   += 1;
-    });
-    return Object.keys(map).sort().slice(-26).map((wk) => {
-      const row: Record<string, any> = { weekStart: wk };
-      FEED_NAMES.forEach((name) => {
-        const d = map[wk]?.[name];
-        row[name] = d ? Math.round(d.sum / d.n) : null;
-      });
-      return row;
-    });
-  }, [filteredRecords]);
+  // Ingestion log — filtered to date range
+  const logRows = useMemo(() => {
+    const { start, end } = getRange(filter);
+    const inRange = LIST_FEED_DAILY.filter(r => r.date >= start && r.date <= end);
+    const failures = inRange.filter(r => r.status !== 'success');
+    if (logFilter === 'failures') return failures.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 50);
+    return [...inRange].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 100);
+  }, [logFilter, filter.dateRange]);
 
-  // Weekly record count (end-of-week) per feed — last 26 weeks
-  const weeklyCount = useMemo(() => {
-    const map: Record<string, Record<FeedName, number>> = {};
-    filteredRecords.forEach((r) => {
-      const wk = mondayOf(r.date);
-      if (!map[wk]) map[wk] = {} as any;
-      map[wk][r.feedName] = r.recordCount;
-    });
-    return Object.keys(map).sort().slice(-26).map((wk) => {
-      const row: Record<string, any> = { weekStart: wk };
-      FEED_NAMES.forEach((name) => { row[name] = map[wk]?.[name] ?? null; });
-      return row;
-    });
-  }, [filteredRecords]);
+  // Spikes in chart windows
+  const spikesInLatency = useMemo(() => {
+    const dates = latencyData.map(d => d.fullDate);
+    return SPIKE_EVENTS.filter(s => dates.some(d => d >= s.startDate && d <= s.endDate));
+  }, [latencyData]);
 
-  // Incident log (non-success records)
-  const incidents = useMemo(() =>
-    filteredRecords
-      .filter((r) => r.status !== "success")
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 40),
-  [filteredRecords]);
+  const spikesInDelta = useMemo(() => {
+    const dates = deltaData.map(d => d.fullDate);
+    return SPIKE_EVENTS.filter(s => dates.some(d => d >= s.startDate && d <= s.endDate));
+  }, [deltaData]);
 
   return (
-    <div className="p-6 max-w-[1440px] mx-auto space-y-6 font-sans">
+    <div className="p-6 space-y-6">
 
-      {filter.viewMode === "split" && (
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-[#E6F0FA] border border-[#0065B3]/30 rounded-lg text-xs text-[#4A5D75]">
-          <Info className="w-3.5 h-3.5 text-[#0065B3] flex-shrink-0" />
-          Feed health metrics are not segmented by alert type — showing combined view.
-        </div>
-      )}
-
-      {/* ── Feed Status KPI Tiles ─────────────────────────────────────────────── */}
-      <div>
-        <SectionLabel label="Feed Status — Current Period" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {feedKPIs.map((kpi) => {
-            const color = FEED_COLORS[kpi.name as FeedName];
-            return (
-              <div key={kpi.name} className="bg-white rounded-lg border border-[#D0D9E8] border-l-4 p-4 shadow-sm"
-                style={{ borderLeftColor: color }}>
-                <div className="text-[10px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2 leading-tight">
-                  {FEED_LABELS_FULL[kpi.name as FeedName]}
-                </div>
-                <div className="text-[11px] mb-2">
-                  <StatusChip status={kpi.status} />
-                </div>
-                <div className="font-['IBM_Plex_Sans_Condensed'] font-bold text-xl text-[#0A1628]">
-                  {kpi.count >= 1000 ? `${(kpi.count / 1000).toFixed(0)}K` : kpi.count}
-                </div>
-                <div className="text-[10px] text-[#8699AF]">records</div>
-                <div className="mt-2 pt-2 border-t border-[#F0F2F5] space-y-0.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-[#4A5D75]">Uptime</span>
-                    <span className="text-[11px] font-semibold"
-                      style={{ color: kpi.uptime >= 99 ? "#1A6632" : kpi.uptime >= 95 ? "#C45A00" : "#E61030" }}>
-                      {kpi.uptime.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-[#4A5D75]">Avg latency</span>
-                    <span className="text-[11px] font-semibold text-[#0A1628]">{kpi.latency}m</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Latency Trend ─────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
-        <div className="flex items-start justify-between mb-1">
-          <SectionLabel
-            label="Ingestion Latency — Weekly Average (Last 26 Weeks)"
-            sub="Minutes from vendor publish to system ingestion · dashed red lines = known incidents"
-          />
-          <div className="flex flex-wrap gap-3 justify-end shrink-0 ml-4">
-            {FEED_NAMES.map((name) => (
-              <div key={name} className="flex items-center gap-1.5">
-                <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: FEED_COLORS[name] }} />
-                <span className="text-[10px] text-[#4A5D75]">{FEED_LABELS[name]}</span>
-              </div>
-            ))}
+      {/* Incident Banners */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex items-start gap-3 rounded-xl border border-[#C45A00] bg-[#FFF3E0] px-4 py-3">
+          <AlertCircle className="w-4 h-4 text-[#C45A00] flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-[#C45A00] uppercase tracking-wide mb-0.5">
+              SPIKE_002 — Acuity Partial Feed Failure
+            </p>
+            <p className="text-xs text-[#4A5D75]">
+              Feb 3–17, 2024 · 15 days · ACUITY_AGGREGATED ingestion degraded to ~30% capacity.
+              Contributed to 14-day alert backlog. L1 High SLA dropped to 71%.
+            </p>
           </div>
         </div>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={weeklyLatency} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
-              <XAxis dataKey="weekStart" tickFormatter={fmtWeek}
-                tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
-              <YAxis tickFormatter={(v) => `${v}m`}
-                tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={36} />
-              <RTooltip
-                content={({ active, payload, label }) =>
-                  active && payload?.length ? (
-                    <div className="bg-[#0A1628] rounded-lg px-3 py-2.5 shadow-xl border border-[#1E3A5F] text-white text-[12px]">
-                      <div className="font-semibold mb-1.5 text-white/90">{fmtWeek(label)}</div>
-                      {payload.map((p: any) => p.value != null && (
-                        <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
-                          <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: p.stroke }} />
-                          <span className="text-white/60">{FEED_LABELS[p.dataKey as FeedName] ?? p.dataKey}:</span>
-                          <span className="font-medium tabular-nums">{p.value}m</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null
-                }
-              />
-              <ReferenceLine x="2024-02-05" stroke="#E61030" strokeDasharray="4 3" strokeWidth={1.5} />
-              <ReferenceLine x="2024-09-09" stroke="#E61030" strokeDasharray="4 3" strokeWidth={1.5} />
-              {FEED_NAMES.map((name) => (
-                <Line key={name} dataKey={name} name={FEED_LABELS[name]}
-                  stroke={FEED_COLORS[name]} strokeWidth={1.5} dot={false}
-                  activeDot={{ r: 3 }} connectNulls={false} />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="flex items-start gap-3 rounded-xl border border-[#E61030] bg-[#FDEAED] px-4 py-3">
+          <XCircle className="w-4 h-4 text-[#E61030] flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-[#E61030] uppercase tracking-wide mb-0.5">
+              Sep 9–10, 2024 — Acuity Complete Failure
+            </p>
+            <p className="text-xs text-[#4A5D75]">
+              36-hour complete outage of ACUITY_AGGREGATED feed. Zero records ingested.
+              Manual override activated. Feed restored Sep 11, 2024.
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* ── Record Count Trend ────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
-        <SectionLabel
-          label="Record Count Trend — Last 26 Weeks"
-          sub="Total active records per feed (end-of-week snapshot)"
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard
+          label="Total Feeds"
+          value="6/6"
+          status="green"
+          subLabel="All feeds nominal today"
         />
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={weeklyCount} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8EDF2" vertical={false} />
-              <XAxis dataKey="weekStart" tickFormatter={fmtWeek}
-                tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
-              <YAxis tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
-                tick={{ fill: "#8699AF", fontSize: 10 }} axisLine={false} tickLine={false} width={40} />
-              <RTooltip
-                content={({ active, payload, label }) =>
-                  active && payload?.length ? (
-                    <div className="bg-[#0A1628] rounded-lg px-3 py-2.5 shadow-xl border border-[#1E3A5F] text-white text-[12px]">
-                      <div className="font-semibold mb-1.5 text-white/90">{fmtWeek(label)}</div>
-                      {payload.map((p: any) => p.value != null && (
-                        <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
-                          <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: p.stroke }} />
-                          <span className="text-white/60">{FEED_LABELS[p.dataKey as FeedName] ?? p.dataKey}:</span>
-                          <span className="font-medium tabular-nums">{Number(p.value).toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null
-                }
-              />
-              {FEED_NAMES.map((name) => (
-                <Line key={name} dataKey={name} name={FEED_LABELS[name]}
-                  stroke={FEED_COLORS[name]} strokeWidth={1.5} dot={false}
-                  activeDot={{ r: 3 }} connectNulls />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <KPICard
+          label="ACUITY Uptime"
+          value={+(LIST_FEED_SUMMARY.feedUptime.ACUITY_AGGREGATED * 100).toFixed(1)}
+          unit="%"
+          status="amber"
+          subLabel="96.8% · 17 failure days"
+        />
+        <KPICard
+          label="Partial Failures"
+          value={LIST_FEED_SUMMARY.partialFailureDays}
+          status="amber"
+          subLabel="Across monitoring period"
+        />
+        <KPICard
+          label="Complete Failures"
+          value={LIST_FEED_SUMMARY.completeFailureDays}
+          status="red"
+          subLabel="2-day Acuity outage Sep 2024"
+          escalationKey={1}
+        />
       </div>
 
-      {/* ── Incident Log ──────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#D0D9E8] bg-[#F5F7FA] flex items-center gap-2">
-          <AlertTriangle size={14} className="text-[#C45A00]" />
-          <span className="text-sm font-semibold text-[#0A1628]">Ingestion Incidents</span>
-          <span className="ml-2 text-[11px] text-[#8699AF]">
-            {incidents.length} incident records in current period
-          </span>
+      {/* Feed Status Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {FEEDS.map(feed => {
+          const latest = latestByFeed[feed];
+          const isOk = latest?.status === 'success';
+          return (
+            <div
+              key={feed}
+              className={`rounded-xl border p-4 bg-white ${isOk ? 'border-[#D0D9E8]' : 'border-[#E61030]'}`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`w-2 h-2 rounded-full ${isOk ? 'bg-[#1A6632]' : 'bg-[#E61030] animate-pulse'}`} />
+                <span className="text-xs font-bold text-[#0A1628]">{FEED_SHORT[feed]}</span>
+              </div>
+              <p className="text-[11px] text-[#8699AF] mb-1">{latest?.date ?? '—'}</p>
+              <p className="text-xs text-[#4A5D75]">
+                {latest?.recordCount?.toLocaleString() ?? '—'} records
+              </p>
+              <p className={`text-[10px] font-medium mt-1 ${
+                latest?.status === 'success' ? 'text-[#1A6632]' :
+                latest?.status === 'partial_failure' ? 'text-[#C45A00]' :
+                'text-[#E61030]'
+              }`}>
+                {latest?.status?.replace('_', ' ').toUpperCase() ?? '—'}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Ingestion Latency Chart */}
+      <div className="rounded-xl border border-[#D0D9E8] bg-white p-5">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-[#0A1628]">Ingestion Latency per Feed</h3>
+          <p className="text-xs text-[#8699AF]">
+            Selected period · Minutes to ingest · Gaps = failure events ·{' '}
+            <span className="text-[#E61030] font-medium">SPIKE_002 Acuity gap clearly visible</span>
+          </p>
         </div>
-        {incidents.length === 0 ? (
-          <div className="px-5 py-10 text-center text-xs text-[#8699AF] flex flex-col items-center gap-2">
-            <CheckCircle2 className="w-6 h-6 text-[#1A6632]" />
-            No incidents in selected period — all feeds healthy.
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={latencyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F0F3F8" />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#8699AF' }} tickLine={false} axisLine={false} interval={4} />
+            <YAxis tick={{ fontSize: 10, fill: '#8699AF' }} tickLine={false} axisLine={false} width={36} tickFormatter={v => `${v}m`} />
+            <Tooltip
+              contentStyle={{ fontSize: 11, border: '1px solid #D0D9E8', borderRadius: 8 }}
+              formatter={(v: unknown, name: unknown) => [v != null ? `${v}m` : 'FAILURE', FEED_SHORT[name as FeedName] ?? String(name)]}
+            />
+            <Legend wrapperStyle={{ fontSize: 10 }} formatter={name => FEED_SHORT[name as FeedName] ?? String(name)} />
+            {spikesInLatency.map(s => (
+              <SpikeAnnotation key={s.spikeId} spike={s} />
+            ))}
+            {FEEDS.map(feed => (
+              <Line
+                key={feed}
+                type="monotone"
+                dataKey={feed}
+                stroke={FEED_COLORS[feed]}
+                strokeWidth={feed === 'ACUITY_AGGREGATED' ? 2.5 : 1.5}
+                dot={false}
+                connectNulls={false}
+                name={feed}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Delta Tracker */}
+      <div className="rounded-xl border border-[#D0D9E8] bg-white p-5">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-[#0A1628]">Entity Delta Tracker</h3>
+          <p className="text-xs text-[#8699AF]">
+            Entities added/removed across all feeds · Selected period ·{' '}
+            <span className="text-[#0065B3] font-medium">SPIKE_003 OFAC SDN additions Jun 2024 visible</span>
+          </p>
+        </div>
+        <ResponsiveContainer width="100%" height={160}>
+          <AreaChart data={deltaData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="deltaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#0065B3" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#0065B3" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F0F3F8" />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#8699AF' }} tickLine={false} axisLine={false} interval={8} />
+            <YAxis tick={{ fontSize: 10, fill: '#8699AF' }} tickLine={false} axisLine={false} width={40} />
+            <Tooltip
+              contentStyle={{ fontSize: 11, border: '1px solid #D0D9E8', borderRadius: 8 }}
+              formatter={(v: unknown) => [typeof v === 'number' ? v.toLocaleString() : String(v), 'Delta Records']}
+            />
+            {spikesInDelta.map(s => (
+              <SpikeAnnotation key={s.spikeId} spike={s} />
+            ))}
+            <Area type="monotone" dataKey="delta" stroke="#0065B3" fill="url(#deltaGrad)" strokeWidth={2} dot={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Ingestion Log Table */}
+      <div className="rounded-xl border border-[#D0D9E8] bg-white overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#D0D9E8] bg-[#F5F7FA]">
+          <h3 className="text-sm font-semibold text-[#0A1628]">Ingestion Log</h3>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setLogFilter('all')}
+              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                logFilter === 'all'
+                  ? 'bg-[#003571] text-white border-[#003571]'
+                  : 'border-[#D0D9E8] text-[#4A5D75] hover:bg-[#F5F7FA]'
+              }`}
+            >
+              All Records
+            </button>
+            <button
+              onClick={() => setLogFilter('failures')}
+              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                logFilter === 'failures'
+                  ? 'bg-[#E61030] text-white border-[#E61030]'
+                  : 'border-[#D0D9E8] text-[#4A5D75] hover:bg-[#F5F7FA]'
+              }`}
+            >
+              Failures Only ({LIST_FEED_SUMMARY.partialFailureDays + LIST_FEED_SUMMARY.completeFailureDays})
+            </button>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-[#F5F7FA] border-b border-[#D0D9E8]">
-                <tr>
-                  {["Date","Feed","Status","Latency","Records","Delta","Notes"].map((h) => (
-                    <th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[#4A5D75] whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {incidents.map((r) => (
-                  <tr key={r.feedId} className="border-b border-[#F0F2F5] hover:bg-[#F5F7FA] transition-colors">
-                    <td className="px-4 py-2.5 text-[#4A5D75] whitespace-nowrap">{fmtDateShort(r.date)}</td>
-                    <td className="px-4 py-2.5">
-                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold"
-                        style={{
-                          background: FEED_COLORS[r.feedName] + "18",
-                          color: FEED_COLORS[r.feedName],
-                          border: `1px solid ${FEED_COLORS[r.feedName]}50`,
-                        }}>
-                        {FEED_LABELS[r.feedName]}
+        </div>
+        <div className="overflow-x-auto max-h-80">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-[#D0D9E8] bg-[#F5F7FA]">
+                {['Date', 'Feed', 'Status', 'Record Count', 'Delta', 'Latency', 'Error / Note'].map(h => (
+                  <th key={h} className="px-4 py-2.5 text-left font-semibold text-[#4A5D75] uppercase tracking-wide whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {logRows.map((row, i) => {
+                const isAcuitySpike2 = row.feedName === 'ACUITY_AGGREGATED' && row.date >= '2024-02-03' && row.date <= '2024-02-17';
+                const isAcuitySep   = row.feedName === 'ACUITY_AGGREGATED' && (row.date === '2024-09-09' || row.date === '2024-09-10');
+                const rowBg = isAcuitySep ? 'bg-[#FDEAED]' : isAcuitySpike2 ? 'bg-[#FFF3E0]' : '';
+                const isFailure = row.status !== 'success';
+
+                return (
+                  <tr key={i} className={`border-b border-[#F5F7FA] hover:bg-[#F5F7FA] transition-colors ${rowBg}`}>
+                    <td className="px-4 py-2.5 font-mono text-[#0A1628] whitespace-nowrap">{row.date}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      <span className={`font-semibold ${row.feedName === 'ACUITY_AGGREGATED' && isFailure ? 'text-[#E61030]' : 'text-[#0A1628]'}`}>
+                        {FEED_SHORT[row.feedName]}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5">
-                      <StatusChip status={r.status} />
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <StatusIcon status={row.status} />
+                        <span className={
+                          row.status === 'success' ? 'text-[#1A6632]' :
+                          row.status === 'partial_failure' ? 'text-[#C45A00] font-semibold' :
+                          'text-[#E61030] font-bold'
+                        }>
+                          {row.status === 'success' ? 'OK' :
+                           row.status === 'partial_failure' ? 'PARTIAL' : 'FAILURE'}
+                        </span>
+                        {isAcuitySpike2 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#FFF3E0] text-[#C45A00]">SPIKE_002</span>
+                        )}
+                        {isAcuitySep && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#FDEAED] text-[#E61030]">SEP-OUTAGE</span>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-4 py-2.5 text-[#4A5D75] tabular-nums">{r.latencyMinutes}m</td>
-                    <td className="px-4 py-2.5 text-[#4A5D75] tabular-nums">{r.recordCount.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 tabular-nums font-semibold"
-                      style={{ color: r.deltaRecords < 0 ? "#E61030" : r.deltaRecords > 0 ? "#1A6632" : "#8699AF" }}>
-                      {r.deltaRecords > 0 ? "+" : ""}{r.deltaRecords.toLocaleString()}
+                    <td className="px-4 py-2.5 text-[#0A1628]">{row.recordCount.toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-[#0A1628]">
+                      {row.deltaRecords > 1000
+                        ? <span className="font-semibold text-[#0065B3]">+{row.deltaRecords.toLocaleString()}</span>
+                        : `+${row.deltaRecords}`}
                     </td>
-                    <td className="px-4 py-2.5 text-[#4A5D75] max-w-xs">
-                      <span className="line-clamp-2 leading-relaxed">{r.failureNote ?? "—"}</span>
+                    <td className="px-4 py-2.5 text-[#0A1628]">
+                      {row.status !== 'success' ? <span className="text-[#E61030]">—</span> : `${row.latencyMinutes}m`}
+                    </td>
+                    <td className="px-4 py-2.5 text-[#8699AF] max-w-xs truncate">
+                      {row.failureNote ?? '—'}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>
