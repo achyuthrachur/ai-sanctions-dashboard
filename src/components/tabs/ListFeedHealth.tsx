@@ -5,11 +5,10 @@ import {
   LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import { AlertCircle, CheckCircle, XCircle, MinusCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, MinusCircle, ArrowRight } from 'lucide-react';
 import { KPICard } from '@/components/common/KPICard';
 import { SpikeAnnotation } from '@/components/common/SpikeAnnotation';
-import { LIST_FEED_DAILY, LIST_FEED_SUMMARY, THREE_WAY_RECONCILIATION } from '@/data/synthetic/listFeeds';
-import type { ReconciliationStatus } from '@/data/synthetic/listFeeds';
+import { LIST_FEED_DAILY, LIST_FEED_SUMMARY } from '@/data/synthetic/listFeeds';
 import { SPIKE_EVENTS } from '@/data/synthetic/spikes';
 import type { FilterState, ListFeedRecord, FeedName } from '@/types/index';
 import { TODAY } from '@/lib/utils';
@@ -36,6 +35,10 @@ const FEEDS: FeedName[] = [
   'OFAC_SDN', 'OFAC_CONSOLIDATED', 'UN_SC', 'EU_CONSOLIDATED', 'HMT', 'ACUITY_AGGREGATED',
 ];
 
+const GOV_FEEDS: FeedName[] = [
+  'OFAC_SDN', 'OFAC_CONSOLIDATED', 'UN_SC', 'EU_CONSOLIDATED', 'HMT',
+];
+
 function StatusIcon({ status }: { status: ListFeedRecord['status'] }) {
   if (status === 'success') return <CheckCircle className="w-4 h-4 text-[#1A6632]" />;
   if (status === 'partial_failure') return <MinusCircle className="w-4 h-4 text-[#C45A00]" />;
@@ -46,7 +49,6 @@ interface ListFeedHealthProps {
   filter: FilterState;
 }
 
-// Fallback date range covering the full dataset when no filter is set
 function getRange(filter: FilterState): { start: string; end: string } {
   if (filter.dateRange) return filter.dateRange;
   return { start: '2023-10-01', end: TODAY };
@@ -55,21 +57,32 @@ function getRange(filter: FilterState): { start: string; end: string } {
 export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
   const [logFilter, setLogFilter] = useState<'all' | 'failures'>('all');
 
-  // Last record per feed (always from full dataset — shows current status)
+  // Last record per feed — current status snapshot
   const latestByFeed = useMemo(() => {
     const result: Partial<Record<FeedName, ListFeedRecord>> = {};
-    for (const rec of LIST_FEED_DAILY) {
-      result[rec.feedName] = rec;
-    }
+    for (const rec of LIST_FEED_DAILY) result[rec.feedName] = rec;
     return result;
   }, []);
 
-  // Latency chart — filtered to selected date range
+  // 3-way match derived values
+  const threeWay = useMemo(() => {
+    const govTotal = GOV_FEEDS.reduce((sum, f) => sum + (latestByFeed[f]?.recordCount ?? 0), 0);
+    const acuityRec = latestByFeed['ACUITY_AGGREGATED'];
+    const acuityCount = acuityRec?.recordCount ?? 0;
+    const acuityDate  = acuityRec?.date ?? '—';
+    const acuityLatency = acuityRec?.latencyMinutes ?? 0;
+    const uptime = (LIST_FEED_SUMMARY.feedUptime.ACUITY_AGGREGATED * 100).toFixed(1);
+    // BofA loads from Acuity — same count, slight lag indicator from latency
+    const boaCount = acuityCount;
+    const lagMin   = acuityLatency;
+    return { govTotal, acuityCount, acuityDate, uptime, boaCount, lagMin };
+  }, [latestByFeed]);
+
+  // Latency chart data
   const latencyData = useMemo(() => {
     const { start, end } = getRange(filter);
-    const filtered = LIST_FEED_DAILY.filter(r => r.date >= start && r.date <= end);
     const byDate: Record<string, Record<string, number | null>> = {};
-    filtered.forEach(r => {
+    LIST_FEED_DAILY.filter(r => r.date >= start && r.date <= end).forEach(r => {
       if (!byDate[r.date]) byDate[r.date] = {};
       byDate[r.date][r.feedName] = r.status !== 'success' ? null : r.latencyMinutes;
     });
@@ -78,7 +91,7 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
       .map(([date, feeds]) => ({ date: date.slice(5), fullDate: date, ...feeds }));
   }, [filter.dateRange]);
 
-  // Delta tracker — filtered to date range
+  // Delta tracker
   const deltaData = useMemo(() => {
     const { start, end } = getRange(filter);
     const byDate: Record<string, number> = {};
@@ -90,16 +103,15 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
       .map(([date, delta]) => ({ date: date.slice(5), fullDate: date, delta }));
   }, [filter.dateRange]);
 
-  // Ingestion log — filtered to date range
+  // Ingestion log
   const logRows = useMemo(() => {
     const { start, end } = getRange(filter);
     const inRange = LIST_FEED_DAILY.filter(r => r.date >= start && r.date <= end);
-    const failures = inRange.filter(r => r.status !== 'success');
-    if (logFilter === 'failures') return failures.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 50);
+    if (logFilter === 'failures')
+      return inRange.filter(r => r.status !== 'success').sort((a, b) => b.date.localeCompare(a.date)).slice(0, 50);
     return [...inRange].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 100);
   }, [logFilter, filter.dateRange]);
 
-  // Spikes in chart windows
   const spikesInLatency = useMemo(() => {
     const dates = latencyData.map(d => d.fullDate);
     return SPIKE_EVENTS.filter(s => dates.some(d => d >= s.startDate && d <= s.endDate));
@@ -113,7 +125,94 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
   return (
     <div className="p-6 space-y-6">
 
-      {/* Incident Banners */}
+      {/* ── 3-Way Match Status ──────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-[#D0D9E8] bg-white p-5">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-[#0A1628]">3-Way Match Status</h3>
+          <p className="text-xs text-[#8699AF]">
+            Government sources → Acuity vendor → BofA screening system · As of {threeWay.acuityDate}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-stretch gap-0">
+
+          {/* Panel 1 — Government Sources */}
+          <div className="rounded-xl border border-[#D0D9E8] p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-3">
+              Government Sources (5)
+            </p>
+            <ul className="space-y-1.5 mb-5">
+              {GOV_FEEDS.map(f => (
+                <li key={f} className="flex items-center gap-2 text-xs text-[#0A1628]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1A6632] flex-shrink-0" />
+                  {FEED_SHORT[f]}
+                </li>
+              ))}
+            </ul>
+            <p className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#003571]">
+              {threeWay.govTotal.toLocaleString()}
+            </p>
+            <p className="text-[11px] text-[#1A6632] mt-1">total records</p>
+          </div>
+
+          {/* Connector Gov → Acuity */}
+          <div className="flex flex-col items-center justify-center gap-2 px-4">
+            <ArrowRight className="w-5 h-5 text-[#4A5D75]" />
+            <CheckCircle className="w-4 h-4 text-[#1A6632]" />
+          </div>
+
+          {/* Panel 2 — Acuity Vendor */}
+          <div className="rounded-xl border border-[#D0D9E8] p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-3">
+              Acuity Vendor
+            </p>
+            <p className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#0A1628]">
+              {threeWay.acuityCount.toLocaleString()}
+            </p>
+            <p className="text-[11px] text-[#8699AF] mt-1 mb-3">latest delivery</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-[#4A5D75]">
+                <ArrowRight className="w-3 h-3 text-[#1A6632]" />
+                <span>{threeWay.uptime}% uptime</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-[#4A5D75]">
+                <CheckCircle className="w-3 h-3 text-[#1A6632]" />
+                <span>{threeWay.acuityDate} last success</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Connector Acuity → BofA */}
+          <div className="flex flex-col items-center justify-center gap-2 px-4">
+            <ArrowRight className="w-5 h-5 text-[#4A5D75]" />
+            <CheckCircle className="w-4 h-4 text-[#1A6632]" />
+          </div>
+
+          {/* Panel 3 — BofA Screening System */}
+          <div className="rounded-xl border border-[#D0D9E8] p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-3">
+              BofA Screening System
+            </p>
+            <p className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#0A1628]">
+              {threeWay.boaCount.toLocaleString()}
+            </p>
+            <p className="text-[11px] text-[#8699AF] mt-1 mb-3">frozen at last successful load</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-[#4A5D75]">
+                <ArrowRight className="w-3 h-3 text-[#1A6632]" />
+                <span>{threeWay.lagMin}m lag</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-[#4A5D75]">
+                <CheckCircle className="w-3 h-3 text-[#1A6632]" />
+                <span>in sync with vendor</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── Incident Banners ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex items-start gap-3 rounded-xl border border-[#C45A00] bg-[#FFF3E0] px-4 py-3">
           <AlertCircle className="w-4 h-4 text-[#C45A00] flex-shrink-0 mt-0.5" />
@@ -141,14 +240,9 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
         </div>
       </div>
 
-      {/* KPI Row */}
+      {/* ── KPI Row ─────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          label="Total Feeds"
-          value="6/6"
-          status="green"
-          subLabel="All feeds nominal today"
-        />
+        <KPICard label="Total Feeds" value="6/6" status="green" subLabel="All feeds nominal today" />
         <KPICard
           label="ACUITY Uptime"
           value={+(LIST_FEED_SUMMARY.feedUptime.ACUITY_AGGREGATED * 100).toFixed(1)}
@@ -171,28 +265,23 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
         />
       </div>
 
-      {/* Feed Status Cards */}
+      {/* ── Feed Status Cards ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {FEEDS.map(feed => {
           const latest = latestByFeed[feed];
           const isOk = latest?.status === 'success';
           return (
-            <div
-              key={feed}
-              className={`rounded-xl border p-4 bg-white ${isOk ? 'border-[#D0D9E8]' : 'border-[#E61030]'}`}
-            >
+            <div key={feed}
+              className={`rounded-xl border p-4 bg-white ${isOk ? 'border-[#D0D9E8]' : 'border-[#E61030]'}`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className={`w-2 h-2 rounded-full ${isOk ? 'bg-[#1A6632]' : 'bg-[#E61030] animate-pulse'}`} />
                 <span className="text-xs font-bold text-[#0A1628]">{FEED_SHORT[feed]}</span>
               </div>
               <p className="text-[11px] text-[#8699AF] mb-1">{latest?.date ?? '—'}</p>
-              <p className="text-xs text-[#4A5D75]">
-                {latest?.recordCount?.toLocaleString() ?? '—'} records
-              </p>
+              <p className="text-xs text-[#4A5D75]">{latest?.recordCount?.toLocaleString() ?? '—'} records</p>
               <p className={`text-[10px] font-medium mt-1 ${
                 latest?.status === 'success' ? 'text-[#1A6632]' :
-                latest?.status === 'partial_failure' ? 'text-[#C45A00]' :
-                'text-[#E61030]'
+                latest?.status === 'partial_failure' ? 'text-[#C45A00]' : 'text-[#E61030]'
               }`}>
                 {latest?.status?.replace('_', ' ').toUpperCase() ?? '—'}
               </p>
@@ -201,97 +290,7 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
         })}
       </div>
 
-      {/* 3-Way Source Reconciliation */}
-      <div className="rounded-xl border border-[#D0D9E8] bg-white overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#D0D9E8] bg-[#F5F7FA]">
-          <h3 className="text-sm font-semibold text-[#0A1628]">3-Way Source Reconciliation</h3>
-          <p className="text-xs text-[#8699AF] mt-0.5">
-            Government published · Vendor (Acuity) ingested · BofA internal engine — snapshot Mar 11, 2026
-          </p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-[#D0D9E8] bg-[#F5F7FA]">
-                {['Feed', 'Gov Published', 'Vendor Ingested', 'Gov ↔ Vendor', 'BofA Loaded', 'Vendor ↔ BofA', 'Status', 'Last Reconciled', 'Note'].map(h => (
-                  <th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[#4A5D75] whitespace-nowrap">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {THREE_WAY_RECONCILIATION.map((row) => {
-                const statusColors: Record<ReconciliationStatus, { bg: string; text: string; label: string }> = {
-                  matched:        { bg: '#E8F5EC', text: '#1A6632', label: 'Matched' },
-                  minor_variance: { bg: '#FFF3E0', text: '#C45A00', label: 'Minor Variance' },
-                  mismatch:       { bg: '#FDEAED', text: '#E61030', label: 'Mismatch' },
-                };
-                const sc = statusColors[row.status];
-                const rowBg = row.status === 'mismatch' ? 'bg-[#FDEAED]' : row.status === 'minor_variance' ? 'bg-[#FFFBF5]' : '';
-
-                return (
-                  <tr key={row.feedName} className={`border-b border-[#F0F2F5] hover:bg-[#F5F7FA] transition-colors ${rowBg}`}>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="font-bold text-[#0A1628]">{FEED_SHORT[row.feedName]}</span>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-[#0A1628] font-medium">
-                      {row.govPublished.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-[#0A1628] font-medium">
-                      {row.vendorIngested.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 tabular-nums font-semibold">
-                      {row.govVendorDelta === 0
-                        ? <span className="text-[#1A6632]">✓ 0</span>
-                        : <span className={row.govVendorDelta > 0 ? 'text-[#0065B3]' : 'text-[#E61030]'}>{row.govVendorDelta > 0 ? '+' : ''}{row.govVendorDelta}</span>
-                      }
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-[#0A1628] font-medium">
-                      {row.boaLoaded.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 tabular-nums font-semibold">
-                      {row.vendorBoaDelta === 0
-                        ? <span className="text-[#1A6632]">✓ 0</span>
-                        : <span className={row.vendorBoaDelta > 0 ? 'text-[#0065B3]' : 'text-[#C45A00]'}>{row.vendorBoaDelta > 0 ? '+' : ''}{row.vendorBoaDelta}</span>
-                      }
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold"
-                        style={{ background: sc.bg, color: sc.text }}>
-                        {sc.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[#8699AF] whitespace-nowrap">{row.lastReconciled}</td>
-                    <td className="px-4 py-3 text-[#8699AF] max-w-xs">
-                      <span className="line-clamp-2">{row.note ?? '—'}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {/* Summary footer */}
-        <div className="px-5 py-3 border-t border-[#D0D9E8] bg-[#F5F7FA] flex items-center gap-6">
-          {[
-            { label: 'Matched', count: THREE_WAY_RECONCILIATION.filter(r => r.status === 'matched').length, color: '#1A6632' },
-            { label: 'Minor Variance', count: THREE_WAY_RECONCILIATION.filter(r => r.status === 'minor_variance').length, color: '#C45A00' },
-            { label: 'Mismatch', count: THREE_WAY_RECONCILIATION.filter(r => r.status === 'mismatch').length, color: '#E61030' },
-          ].map(s => (
-            <div key={s.label} className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
-              <span className="text-[11px] text-[#4A5D75]">{s.label}:</span>
-              <span className="text-[11px] font-bold" style={{ color: s.color }}>{s.count}</span>
-            </div>
-          ))}
-          <span className="ml-auto text-[10px] text-[#8699AF]">
-            Tolerance: ±0 records for mismatch · Next scheduled reconciliation: 2026-03-12 06:00 UTC
-          </span>
-        </div>
-      </div>
-
-      {/* Ingestion Latency Chart */}
+      {/* ── Ingestion Latency Chart ─────────────────────────────────────────── */}
       <div className="rounded-xl border border-[#D0D9E8] bg-white p-5">
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-[#0A1628]">Ingestion Latency per Feed</h3>
@@ -310,26 +309,17 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
               formatter={(v: unknown, name: unknown) => [v != null ? `${v}m` : 'FAILURE', FEED_SHORT[name as FeedName] ?? String(name)]}
             />
             <Legend wrapperStyle={{ fontSize: 10 }} formatter={name => FEED_SHORT[name as FeedName] ?? String(name)} />
-            {spikesInLatency.map(s => (
-              <SpikeAnnotation key={s.spikeId} spike={s} />
-            ))}
+            {spikesInLatency.map(s => <SpikeAnnotation key={s.spikeId} spike={s} />)}
             {FEEDS.map(feed => (
-              <Line
-                key={feed}
-                type="monotone"
-                dataKey={feed}
-                stroke={FEED_COLORS[feed]}
-                strokeWidth={feed === 'ACUITY_AGGREGATED' ? 2.5 : 1.5}
-                dot={false}
-                connectNulls={false}
-                name={feed}
-              />
+              <Line key={feed} type="monotone" dataKey={feed}
+                stroke={FEED_COLORS[feed]} strokeWidth={feed === 'ACUITY_AGGREGATED' ? 2.5 : 1.5}
+                dot={false} connectNulls={false} name={feed} />
             ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Delta Tracker */}
+      {/* ── Delta Tracker ───────────────────────────────────────────────────── */}
       <div className="rounded-xl border border-[#D0D9E8] bg-white p-5">
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-[#0A1628]">Entity Delta Tracker</h3>
@@ -353,37 +343,27 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
               contentStyle={{ fontSize: 11, border: '1px solid #D0D9E8', borderRadius: 8 }}
               formatter={(v: unknown) => [typeof v === 'number' ? v.toLocaleString() : String(v), 'Delta Records']}
             />
-            {spikesInDelta.map(s => (
-              <SpikeAnnotation key={s.spikeId} spike={s} />
-            ))}
+            {spikesInDelta.map(s => <SpikeAnnotation key={s.spikeId} spike={s} />)}
             <Area type="monotone" dataKey="delta" stroke="#0065B3" fill="url(#deltaGrad)" strokeWidth={2} dot={false} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Ingestion Log Table */}
+      {/* ── Ingestion Log Table ─────────────────────────────────────────────── */}
       <div className="rounded-xl border border-[#D0D9E8] bg-white overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#D0D9E8] bg-[#F5F7FA]">
           <h3 className="text-sm font-semibold text-[#0A1628]">Ingestion Log</h3>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setLogFilter('all')}
+            <button onClick={() => setLogFilter('all')}
               className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                logFilter === 'all'
-                  ? 'bg-[#003571] text-white border-[#003571]'
-                  : 'border-[#D0D9E8] text-[#4A5D75] hover:bg-[#F5F7FA]'
-              }`}
-            >
+                logFilter === 'all' ? 'bg-[#003571] text-white border-[#003571]' : 'border-[#D0D9E8] text-[#4A5D75] hover:bg-[#F5F7FA]'
+              }`}>
               All Records
             </button>
-            <button
-              onClick={() => setLogFilter('failures')}
+            <button onClick={() => setLogFilter('failures')}
               className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                logFilter === 'failures'
-                  ? 'bg-[#E61030] text-white border-[#E61030]'
-                  : 'border-[#D0D9E8] text-[#4A5D75] hover:bg-[#F5F7FA]'
-              }`}
-            >
+                logFilter === 'failures' ? 'bg-[#E61030] text-white border-[#E61030]' : 'border-[#D0D9E8] text-[#4A5D75] hover:bg-[#F5F7FA]'
+              }`}>
               Failures Only ({LIST_FEED_SUMMARY.partialFailureDays + LIST_FEED_SUMMARY.completeFailureDays})
             </button>
           </div>
@@ -393,9 +373,7 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
             <thead>
               <tr className="border-b border-[#D0D9E8] bg-[#F5F7FA]">
                 {['Date', 'Feed', 'Status', 'Record Count', 'Delta', 'Latency', 'Error / Note'].map(h => (
-                  <th key={h} className="px-4 py-2.5 text-left font-semibold text-[#4A5D75] uppercase tracking-wide whitespace-nowrap">
-                    {h}
-                  </th>
+                  <th key={h} className="px-4 py-2.5 text-left font-semibold text-[#4A5D75] uppercase tracking-wide whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -405,7 +383,6 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
                 const isAcuitySep   = row.feedName === 'ACUITY_AGGREGATED' && (row.date === '2024-09-09' || row.date === '2024-09-10');
                 const rowBg = isAcuitySep ? 'bg-[#FDEAED]' : isAcuitySpike2 ? 'bg-[#FFF3E0]' : '';
                 const isFailure = row.status !== 'success';
-
                 return (
                   <tr key={i} className={`border-b border-[#F5F7FA] hover:bg-[#F5F7FA] transition-colors ${rowBg}`}>
                     <td className="px-4 py-2.5 font-mono text-[#0A1628] whitespace-nowrap">{row.date}</td>
@@ -417,20 +394,11 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <StatusIcon status={row.status} />
-                        <span className={
-                          row.status === 'success' ? 'text-[#1A6632]' :
-                          row.status === 'partial_failure' ? 'text-[#C45A00] font-semibold' :
-                          'text-[#E61030] font-bold'
-                        }>
-                          {row.status === 'success' ? 'OK' :
-                           row.status === 'partial_failure' ? 'PARTIAL' : 'FAILURE'}
+                        <span className={row.status === 'success' ? 'text-[#1A6632]' : row.status === 'partial_failure' ? 'text-[#C45A00] font-semibold' : 'text-[#E61030] font-bold'}>
+                          {row.status === 'success' ? 'OK' : row.status === 'partial_failure' ? 'PARTIAL' : 'FAILURE'}
                         </span>
-                        {isAcuitySpike2 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#FFF3E0] text-[#C45A00]">SPIKE_002</span>
-                        )}
-                        {isAcuitySep && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#FDEAED] text-[#E61030]">SEP-OUTAGE</span>
-                        )}
+                        {isAcuitySpike2 && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#FFF3E0] text-[#C45A00]">SPIKE_002</span>}
+                        {isAcuitySep    && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#FDEAED] text-[#E61030]">SEP-OUTAGE</span>}
                       </div>
                     </td>
                     <td className="px-4 py-2.5 text-[#0A1628]">{row.recordCount.toLocaleString()}</td>
@@ -442,9 +410,7 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
                     <td className="px-4 py-2.5 text-[#0A1628]">
                       {row.status !== 'success' ? <span className="text-[#E61030]">—</span> : `${row.latencyMinutes}m`}
                     </td>
-                    <td className="px-4 py-2.5 text-[#8699AF] max-w-xs truncate">
-                      {row.failureNote ?? '—'}
-                    </td>
+                    <td className="px-4 py-2.5 text-[#8699AF] max-w-xs truncate">{row.failureNote ?? '—'}</td>
                   </tr>
                 );
               })}
