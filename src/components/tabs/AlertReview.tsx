@@ -688,71 +688,7 @@ export default function AlertReview({ filters }: AlertReviewProps) {
             </div>
           )}
 
-          {/* ── Section 3 — SLA Heatmap ─────────────────────────────────────── */}
-          <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4">
-              <SectionLabel
-                label={`${activeTier} SLA Compliance Heatmap — Last 90 Days`}
-                noMargin
-              />
-              <div className="flex items-center gap-3">
-                <HeatLegend
-                  target={activeTier === 'L1' ? thrL1H.targetCompliance
-                        : activeTier === 'L2' ? thrL2.targetCompliance
-                        : thrL3.targetCompliance}
-                  warning={activeTier === 'L1' ? thrL1H.warningThreshold
-                         : activeTier === 'L2' ? thrL2.warningThreshold
-                         : thrL3.warningThreshold}
-                />
-                <span className="text-[11px] text-[#8699AF]">Click cell to drill down</span>
-              </div>
-            </div>
-
-            {/* Day headers */}
-            <div className="grid gap-1 mb-1" style={{ gridTemplateColumns: 'repeat(7, 1.25rem)' }}>
-              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-                <div key={i} className="w-5 text-center text-[10px] text-[#8699AF] font-medium">{d}</div>
-              ))}
-            </div>
-
-            {/* Heatmap grid */}
-            <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(7, 1.25rem)' }}>
-              {/* Padding for first week */}
-              {Array.from({ length: heatmapPadding }).map((_, i) => (
-                <div key={`pad-${i}`} className="w-5 h-5" />
-              ))}
-              {heatmapData.map(cell => {
-                const thr = activeTier === 'L1' ? thrL1H
-                          : activeTier === 'L2' ? thrL2
-                          : thrL3
-                const color = heatColor(cell.value, thr.targetCompliance, thr.warningThreshold)
-                return (
-                  <button
-                    key={cell.date}
-                    title={`${cell.date}: ${fmtPct(cell.value)}${cell.spikeFlag ? ' ⚡ ' + cell.spikeId : ''}`}
-                    onClick={() => handleHeatmapClick(cell.date, cell.value)}
-                    className="w-5 h-5 rounded-sm transition-transform hover:scale-110 hover:ring-2 hover:ring-[#0065B3] hover:ring-offset-1 focus:outline-none"
-                    style={{ backgroundColor: color }}
-                  />
-                )
-              })}
-            </div>
-
-            <div className="mt-3 flex items-center gap-2 flex-wrap">
-              {heatmapData.some(d => d.spikeFlag) && (
-                <p className="text-[10px] text-[#8699AF]">
-                  ⚡ Cells with spike events marked in chart above
-                </p>
-              )}
-              {filters.viewMode === 'split' && (
-                <p className="text-[10px] text-[#8699AF]">
-                  Heatmap shows combined SLA — bar chart above is split by alert type.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* ── Section 4 — Maker-Checker Integrity (L1 only) ───────────────── */}
+          {/* ── Section 3 — Maker-Checker Integrity (L1 only) ───────────────── */}
           {activeTier === 'L1' && (
             <MakerCheckerPanel escalationProtocol={mcEsc} />
           )}
