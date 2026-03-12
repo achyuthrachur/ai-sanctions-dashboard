@@ -269,3 +269,100 @@ export const LIST_FEED_SUMMARY = {
     },
   ],
 } as const;
+
+// ============================================================
+// THREE_WAY_RECONCILIATION — point-in-time snapshot (Mar 11 2026)
+//
+// Compares record counts across three authoritative sources:
+//   Government  = official published list count (regulatory source of truth)
+//   Vendor      = Acuity Aggregated ingested count
+//   BofA        = count loaded into BofA internal screening engine
+//
+// Expected: all three match within ±0.02% tolerance.
+// Minor variances (<5 records) flagged as "minor_variance" — not operationally
+// significant but must be investigated and cleared within 24 hours.
+// A gap ≥5 records is a "mismatch" requiring immediate escalation.
+// ============================================================
+
+export type ReconciliationStatus = "matched" | "minor_variance" | "mismatch";
+
+export interface ReconciliationRow {
+  feedName:        FeedName;
+  govPublished:    number;
+  vendorIngested:  number;
+  boaLoaded:       number;
+  govVendorDelta:  number;  // vendorIngested - govPublished
+  vendorBoaDelta:  number;  // boaLoaded - vendorIngested
+  status:          ReconciliationStatus;
+  lastReconciled:  string;
+  note:            string | null;
+}
+
+export const THREE_WAY_RECONCILIATION: ReconciliationRow[] = [
+  {
+    feedName:       "OFAC_SDN",
+    govPublished:   15_820,
+    vendorIngested: 15_820,
+    boaLoaded:      15_820,
+    govVendorDelta: 0,
+    vendorBoaDelta: 0,
+    status:         "matched",
+    lastReconciled: "2026-03-11",
+    note: null,
+  },
+  {
+    feedName:       "OFAC_CONSOLIDATED",
+    govPublished:   33_241,
+    vendorIngested: 33_241,
+    boaLoaded:      33_238,
+    govVendorDelta: 0,
+    vendorBoaDelta: -3,
+    status:         "minor_variance",
+    lastReconciled: "2026-03-11",
+    note: "3-record gap between Acuity and BofA engine. Alias deduplication pass scheduled 2026-03-12.",
+  },
+  {
+    feedName:       "UN_SC",
+    govPublished:   831,
+    vendorIngested: 831,
+    boaLoaded:      831,
+    govVendorDelta: 0,
+    vendorBoaDelta: 0,
+    status:         "matched",
+    lastReconciled: "2026-03-11",
+    note: null,
+  },
+  {
+    feedName:       "EU_CONSOLIDATED",
+    govPublished:   24_891,
+    vendorIngested: 24_891,
+    boaLoaded:      24_891,
+    govVendorDelta: 0,
+    vendorBoaDelta: 0,
+    status:         "matched",
+    lastReconciled: "2026-03-11",
+    note: null,
+  },
+  {
+    feedName:       "HMT",
+    govPublished:   5_614,
+    vendorIngested: 5_614,
+    boaLoaded:      5_614,
+    govVendorDelta: 0,
+    vendorBoaDelta: 0,
+    status:         "matched",
+    lastReconciled: "2026-03-11",
+    note: null,
+  },
+  {
+    feedName:       "ACUITY_AGGREGATED",
+    govPublished:   81_197,
+    vendorIngested: 81_197,
+    boaLoaded:      81_194,
+    govVendorDelta: 0,
+    vendorBoaDelta: -3,
+    status:         "minor_variance",
+    lastReconciled: "2026-03-11",
+    note: "BofA engine 3 records behind Acuity aggregate. Mirrors OFAC_CONSOLIDATED gap — same root cause.",
+  },
+];

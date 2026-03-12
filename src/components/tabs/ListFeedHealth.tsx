@@ -8,7 +8,8 @@ import {
 import { AlertCircle, CheckCircle, XCircle, MinusCircle } from 'lucide-react';
 import { KPICard } from '@/components/common/KPICard';
 import { SpikeAnnotation } from '@/components/common/SpikeAnnotation';
-import { LIST_FEED_DAILY, LIST_FEED_SUMMARY } from '@/data/synthetic/listFeeds';
+import { LIST_FEED_DAILY, LIST_FEED_SUMMARY, THREE_WAY_RECONCILIATION } from '@/data/synthetic/listFeeds';
+import type { ReconciliationStatus } from '@/data/synthetic/listFeeds';
 import { SPIKE_EVENTS } from '@/data/synthetic/spikes';
 import type { FilterState, ListFeedRecord, FeedName } from '@/types/index';
 import { TODAY } from '@/lib/utils';
@@ -198,6 +199,96 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
             </div>
           );
         })}
+      </div>
+
+      {/* 3-Way Source Reconciliation */}
+      <div className="rounded-xl border border-[#D0D9E8] bg-white overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#D0D9E8] bg-[#F5F7FA]">
+          <h3 className="text-sm font-semibold text-[#0A1628]">3-Way Source Reconciliation</h3>
+          <p className="text-xs text-[#8699AF] mt-0.5">
+            Government published · Vendor (Acuity) ingested · BofA internal engine — snapshot Mar 11, 2026
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-[#D0D9E8] bg-[#F5F7FA]">
+                {['Feed', 'Gov Published', 'Vendor Ingested', 'Gov ↔ Vendor', 'BofA Loaded', 'Vendor ↔ BofA', 'Status', 'Last Reconciled', 'Note'].map(h => (
+                  <th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[#4A5D75] whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {THREE_WAY_RECONCILIATION.map((row) => {
+                const statusColors: Record<ReconciliationStatus, { bg: string; text: string; label: string }> = {
+                  matched:        { bg: '#E8F5EC', text: '#1A6632', label: 'Matched' },
+                  minor_variance: { bg: '#FFF3E0', text: '#C45A00', label: 'Minor Variance' },
+                  mismatch:       { bg: '#FDEAED', text: '#E61030', label: 'Mismatch' },
+                };
+                const sc = statusColors[row.status];
+                const rowBg = row.status === 'mismatch' ? 'bg-[#FDEAED]' : row.status === 'minor_variance' ? 'bg-[#FFFBF5]' : '';
+
+                return (
+                  <tr key={row.feedName} className={`border-b border-[#F0F2F5] hover:bg-[#F5F7FA] transition-colors ${rowBg}`}>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="font-bold text-[#0A1628]">{FEED_SHORT[row.feedName]}</span>
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-[#0A1628] font-medium">
+                      {row.govPublished.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-[#0A1628] font-medium">
+                      {row.vendorIngested.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums font-semibold">
+                      {row.govVendorDelta === 0
+                        ? <span className="text-[#1A6632]">✓ 0</span>
+                        : <span className={row.govVendorDelta > 0 ? 'text-[#0065B3]' : 'text-[#E61030]'}>{row.govVendorDelta > 0 ? '+' : ''}{row.govVendorDelta}</span>
+                      }
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-[#0A1628] font-medium">
+                      {row.boaLoaded.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums font-semibold">
+                      {row.vendorBoaDelta === 0
+                        ? <span className="text-[#1A6632]">✓ 0</span>
+                        : <span className={row.vendorBoaDelta > 0 ? 'text-[#0065B3]' : 'text-[#C45A00]'}>{row.vendorBoaDelta > 0 ? '+' : ''}{row.vendorBoaDelta}</span>
+                      }
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold"
+                        style={{ background: sc.bg, color: sc.text }}>
+                        {sc.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[#8699AF] whitespace-nowrap">{row.lastReconciled}</td>
+                    <td className="px-4 py-3 text-[#8699AF] max-w-xs">
+                      <span className="line-clamp-2">{row.note ?? '—'}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {/* Summary footer */}
+        <div className="px-5 py-3 border-t border-[#D0D9E8] bg-[#F5F7FA] flex items-center gap-6">
+          {[
+            { label: 'Matched', count: THREE_WAY_RECONCILIATION.filter(r => r.status === 'matched').length, color: '#1A6632' },
+            { label: 'Minor Variance', count: THREE_WAY_RECONCILIATION.filter(r => r.status === 'minor_variance').length, color: '#C45A00' },
+            { label: 'Mismatch', count: THREE_WAY_RECONCILIATION.filter(r => r.status === 'mismatch').length, color: '#E61030' },
+          ].map(s => (
+            <div key={s.label} className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+              <span className="text-[11px] text-[#4A5D75]">{s.label}:</span>
+              <span className="text-[11px] font-bold" style={{ color: s.color }}>{s.count}</span>
+            </div>
+          ))}
+          <span className="ml-auto text-[10px] text-[#8699AF]">
+            Tolerance: ±0 records for mismatch · Next scheduled reconciliation: 2026-03-12 06:00 UTC
+          </span>
+        </div>
       </div>
 
       {/* Ingestion Latency Chart */}
