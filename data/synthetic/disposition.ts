@@ -48,7 +48,7 @@ function getSpikeWeekInfo(weekIdx: number): { spikeId: string | null; severity: 
 
 function generateDispositionWeekly(): DispositionWeek[] {
   const weeks: DispositionWeek[] = [];
-  const TOTAL_WEEKS = 75;
+  const TOTAL_WEEKS = 128; // Oct 2 2023 → Mar 9 2026 (127 full weeks + current)
 
   for (let w = 0; w < TOTAL_WEEKS; w++) {
     const weekStart = mondayOf(w);
