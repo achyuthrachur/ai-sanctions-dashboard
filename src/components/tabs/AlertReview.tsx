@@ -463,6 +463,39 @@ export default function AlertReview({ filters }: AlertReviewProps) {
             </div>
           </div>
 
+          {/* ── Alert Count Split (split mode only) ─────────────────────────── */}
+          {filters.viewMode === 'split' && (
+            <div>
+              <SectionLabel label={`${activeTier} Alert Volume Split — 7-Day Average`} />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white rounded-lg border-l-4 border-l-[#0065B3] border border-[#D0D9E8] p-4 shadow-sm">
+                  <div className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2">Relationship Alerts</div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#0065B3]">
+                      {Math.round(avg(filteredSummaries.slice(-7).map(d =>
+                        activeTier === 'L1' ? d.l1CountRel :
+                        activeTier === 'L2' ? d.l2CountRel : d.l3CountRel
+                      ))).toLocaleString()}
+                    </span>
+                    <span className="text-sm text-[#4A5D75]">/ day avg</span>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg border-l-4 border-l-[#C45A00] border border-[#D0D9E8] p-4 shadow-sm">
+                  <div className="text-[11px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-2">Transaction Alerts</div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#C45A00]">
+                      {Math.round(avg(filteredSummaries.slice(-7).map(d =>
+                        activeTier === 'L1' ? d.l1CountTrx :
+                        activeTier === 'L2' ? d.l2CountTrx : d.l3CountTrx
+                      ))).toLocaleString()}
+                    </span>
+                    <span className="text-sm text-[#4A5D75]">/ day avg</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── Section 2 — Daily Alert Volume Chart ────────────────────────── */}
           <div className="bg-white rounded-xl border border-[#D0D9E8] shadow-sm p-5">
             <div className="flex items-center justify-between mb-1">
@@ -636,7 +669,7 @@ export default function AlertReview({ filters }: AlertReviewProps) {
               )}
               {filters.viewMode === 'split' && (
                 <p className="text-[10px] text-[#8699AF]">
-                  SLA data shown combined — not yet split by alert type.
+                  Heatmap shows combined SLA — bar chart above is split by alert type.
                 </p>
               )}
             </div>
