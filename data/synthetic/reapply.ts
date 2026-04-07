@@ -19,7 +19,7 @@ const TYPE_A: ReapplyTransaction[] = [
   // HEADLINE RECORD: Russian trading company, ~$617.5K exposure
   {
     transactionId: "RPY-A-001",
-    originator: "BofA Corporate Banking",
+    originator: "Corporate Banking",
     originatorCountry: "US",
     beneficiary: "Volga Meridian Trading Co",
     beneficiaryCountry: "RU",
@@ -39,7 +39,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-002",
-    originator: "BofA Global Transaction Services",
+    originator: "Global Transaction Services",
     originatorCountry: "US",
     beneficiary: "Tehran Petrochemical Exchange",
     beneficiaryCountry: "IR",
@@ -59,7 +59,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-003",
-    originator: "BofA Wealth Management",
+    originator: "Wealth Management",
     originatorCountry: "US",
     beneficiary: "Minsk Capital Holdings",
     beneficiaryCountry: "BY",
@@ -79,7 +79,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-004",
-    originator: "BofA GCIB Structured Finance",
+    originator: "GCIB Structured Finance",
     originatorCountry: "US",
     beneficiary: "Pyongyang General Trading Corp",
     beneficiaryCountry: "KP",
@@ -99,7 +99,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-005",
-    originator: "BofA Global Corporate Banking",
+    originator: "Global Corporate Banking",
     originatorCountry: "US",
     beneficiary: "Damascene Trade Partners",
     beneficiaryCountry: "SY",
@@ -119,7 +119,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-006",
-    originator: "BofA GWIM Private Banking",
+    originator: "GWIM Private Banking",
     originatorCountry: "US",
     beneficiary: "Caspian Resources International",
     beneficiaryCountry: "RU",
@@ -139,7 +139,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-007",
-    originator: "BofA GTS Correspondent Banking",
+    originator: "GTS Correspondent Banking",
     originatorCountry: "US",
     beneficiary: "Ural Precision Instruments",
     beneficiaryCountry: "RU",
@@ -159,7 +159,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-008",
-    originator: "BofA Corporate Trust Services",
+    originator: "Corporate Trust Services",
     originatorCountry: "US",
     beneficiary: "Havana International Finance SA",
     beneficiaryCountry: "CU",
@@ -179,7 +179,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-009",
-    originator: "BofA Trade Finance",
+    originator: "Trade Finance",
     originatorCountry: "US",
     beneficiary: "Kharkiv Industrial Group",
     beneficiaryCountry: "RU",
@@ -199,7 +199,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-010",
-    originator: "BofA Merrill Lynch International",
+    originator: "Merrill Lynch International",
     originatorCountry: "US",
     beneficiary: "Caracas Sovereign Wealth Partners",
     beneficiaryCountry: "VE",
@@ -219,7 +219,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-011",
-    originator: "BofA Securities",
+    originator: "Securities",
     originatorCountry: "US",
     beneficiary: "Novorossiysk Bulk Terminals",
     beneficiaryCountry: "RU",
@@ -239,7 +239,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-012",
-    originator: "BofA Global Leasing",
+    originator: "Global Leasing",
     originatorCountry: "US",
     beneficiary: "Tbilisi Corridor Finance",
     beneficiaryCountry: "GE",
@@ -259,7 +259,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-013",
-    originator: "BofA Corporate Banking EMEA",
+    originator: "Corporate Banking EMEA",
     originatorCountry: "US",
     beneficiary: "Mashhad Energy Trading Co",
     beneficiaryCountry: "IR",
@@ -279,7 +279,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-014",
-    originator: "BofA Trade Capital",
+    originator: "Trade Capital",
     originatorCountry: "US",
     beneficiary: "Donetsk Steel Export Ltd",
     beneficiaryCountry: "RU",
@@ -299,7 +299,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-015",
-    originator: "BofA GWIM International",
+    originator: "GWIM International",
     originatorCountry: "US",
     beneficiary: "Minsk Agro Holdings",
     beneficiaryCountry: "BY",
@@ -319,7 +319,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-016",
-    originator: "BofA Institutional Investments",
+    originator: "Institutional Investments",
     originatorCountry: "US",
     beneficiary: "Sanaa Commercial Bank",
     beneficiaryCountry: "YE",
@@ -339,7 +339,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-017",
-    originator: "BofA GCB Asia Pacific",
+    originator: "GCB Asia Pacific",
     originatorCountry: "US",
     beneficiary: "Kerch Strait Marine Services",
     beneficiaryCountry: "RU",
@@ -359,7 +359,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-018",
-    originator: "BofA Global Payments",
+    originator: "Global Payments",
     originatorCountry: "US",
     beneficiary: "Sevastopol Port Authority Holding",
     beneficiaryCountry: "RU",
@@ -379,7 +379,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-019",
-    originator: "BofA Commercial Real Estate Finance",
+    originator: "Commercial Real Estate Finance",
     originatorCountry: "US",
     beneficiary: "Lugansk Investment Group",
     beneficiaryCountry: "RU",
@@ -399,7 +399,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-020",
-    originator: "BofA Private Bank",
+    originator: "Private Bank",
     originatorCountry: "US",
     beneficiary: "Baku Transit Finance LLC",
     beneficiaryCountry: "AZ",
@@ -419,7 +419,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-021",
-    originator: "BofA Export Finance",
+    originator: "Export Finance",
     originatorCountry: "US",
     beneficiary: "Isfahan Nuclear Technologies",
     beneficiaryCountry: "IR",
@@ -439,7 +439,7 @@ const TYPE_A: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-A-022",
-    originator: "BofA Transaction Banking",
+    originator: "Transaction Banking",
     originatorCountry: "US",
     beneficiary: "Volga Siberian Logistics",
     beneficiaryCountry: "RU",
@@ -464,7 +464,7 @@ const TYPE_A: ReapplyTransaction[] = [
 const TYPE_B: ReapplyTransaction[] = [
   {
     transactionId: "RPY-B-001",
-    originator: "BofA GTS Payments",
+    originator: "GTS Payments",
     originatorCountry: "US",
     beneficiary: "Nordstream Transit GmbH",
     beneficiaryCountry: "DE",
@@ -484,7 +484,7 @@ const TYPE_B: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-B-002",
-    originator: "BofA Trade Finance APAC",
+    originator: "Trade Finance APAC",
     originatorCountry: "US",
     beneficiary: "Vladivostok Pacific Commodities",
     beneficiaryCountry: "RU",
@@ -504,7 +504,7 @@ const TYPE_B: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-B-003",
-    originator: "BofA GCIB Energy Group",
+    originator: "GCIB Energy Group",
     originatorCountry: "US",
     beneficiary: "Abadan Oil Refinery Services",
     beneficiaryCountry: "IR",
@@ -524,7 +524,7 @@ const TYPE_B: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-B-004",
-    originator: "BofA Commodities Finance",
+    originator: "Commodities Finance",
     originatorCountry: "US",
     beneficiary: "Donbas Coal Export Association",
     beneficiaryCountry: "RU",
@@ -544,7 +544,7 @@ const TYPE_B: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-B-005",
-    originator: "BofA Global Markets",
+    originator: "Global Markets",
     originatorCountry: "US",
     beneficiary: "Minsk Financial Instruments Ltd",
     beneficiaryCountry: "BY",
@@ -564,7 +564,7 @@ const TYPE_B: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-B-006",
-    originator: "BofA GTS Remittance",
+    originator: "GTS Remittance",
     originatorCountry: "US",
     beneficiary: "Havana Port Development Corp",
     beneficiaryCountry: "CU",
@@ -584,7 +584,7 @@ const TYPE_B: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-B-007",
-    originator: "BofA Infrastructure Finance",
+    originator: "Infrastructure Finance",
     originatorCountry: "US",
     beneficiary: "Sanaa Port Reconstruction Fund",
     beneficiaryCountry: "YE",
@@ -604,7 +604,7 @@ const TYPE_B: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-B-008",
-    originator: "BofA Mining Finance",
+    originator: "Mining Finance",
     originatorCountry: "US",
     beneficiary: "Tripoli Resource Trading",
     beneficiaryCountry: "LY",
@@ -624,7 +624,7 @@ const TYPE_B: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-B-009",
-    originator: "BofA GCB Latin America",
+    originator: "GCB Latin America",
     originatorCountry: "US",
     beneficiary: "Caracas Petroleum Finance",
     beneficiaryCountry: "VE",
@@ -644,7 +644,7 @@ const TYPE_B: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-B-010",
-    originator: "BofA GWIM Family Office",
+    originator: "GWIM Family Office",
     originatorCountry: "US",
     beneficiary: "Damascus Real Estate Holdings",
     beneficiaryCountry: "SY",
@@ -664,7 +664,7 @@ const TYPE_B: ReapplyTransaction[] = [
   },
   {
     transactionId: "RPY-B-011",
-    originator: "BofA Global Bonds",
+    originator: "Global Bonds",
     originatorCountry: "US",
     beneficiary: "Novorossiysk Grain Export LLC",
     beneficiaryCountry: "RU",
@@ -687,10 +687,10 @@ const TYPE_B: ReapplyTransaction[] = [
 // ── TYPE C — 67 records (stale_review, lastReviewDate > 18 months ago) ──
 
 const TYPE_C_ORIGINATORS = [
-  "BofA GCB Americas","BofA GTS Pacific","BofA GCIB Europe","BofA GWIM Asia",
-  "BofA Trade Finance","BofA Corporate Trust","BofA Institutional","BofA Export Finance",
-  "BofA Global Payments","BofA Commodity Finance","BofA Infrastructure","BofA Private Bank",
-  "BofA Securities EMEA","BofA Leasing Group","BofA Capital Markets",
+  "GCB Americas","GTS Pacific","GCIB Europe","GWIM Asia",
+  "Trade Finance","Corporate Trust","Institutional","Export Finance",
+  "Global Payments","Commodity Finance","Infrastructure","Private Bank",
+  "Securities EMEA","Leasing Group","Capital Markets",
 ];
 const TYPE_C_BENEFICIARIES = [
   "Ankara Commercial Partners","Warsaw Trade Finance","Bucharest Holdings","Prague Capital Group",
@@ -796,12 +796,12 @@ function generateTypeC(): ReapplyTransaction[] {
 // ── TYPE D — 240 records (clean, current) ───────────────────
 
 const TYPE_D_ORIGINATORS = [
-  "BofA Global Payments","BofA Trade Finance","BofA GCB Americas","BofA GCB EMEA",
-  "BofA GTS Correspondent","BofA GCIB M&A","BofA GCIB Debt","BofA GWIM Ultra High Net Worth",
-  "BofA Securities Fixed Income","BofA Securities Equities","BofA Commodity Markets",
-  "BofA Infrastructure Debt","BofA Real Estate Finance","BofA Corporate Trust",
-  "BofA Institutional Asset Management","BofA Private Equity Finance",
-  "BofA Export Credit","BofA Supply Chain Finance","BofA Leasing","BofA Project Finance",
+  "Global Payments","Trade Finance","GCB Americas","GCB EMEA",
+  "GTS Correspondent","GCIB M&A","GCIB Debt","GWIM Ultra High Net Worth",
+  "Securities Fixed Income","Securities Equities","Commodity Markets",
+  "Infrastructure Debt","Real Estate Finance","Corporate Trust",
+  "Institutional Asset Management","Private Equity Finance",
+  "Export Credit","Supply Chain Finance","Leasing","Project Finance",
 ];
 const TYPE_D_BENEFICIARIES = [
   "Frankfurt Capital Group","London Trade Partners","Paris Finance Ltd","Zurich Holdings",

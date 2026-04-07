@@ -72,10 +72,10 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
     const acuityDate  = acuityRec?.date ?? '—';
     const acuityLatency = acuityRec?.latencyMinutes ?? 0;
     const uptime = (LIST_FEED_SUMMARY.feedUptime.ACUITY_AGGREGATED * 100).toFixed(1);
-    // BofA loads from Acuity — same count, slight lag indicator from latency
-    const boaCount = acuityCount;
-    const lagMin   = acuityLatency;
-    return { govTotal, acuityCount, acuityDate, uptime, boaCount, lagMin };
+    // Client loads from Acuity — same count, slight lag indicator from latency
+    const clientCount = acuityCount;
+    const lagMin      = acuityLatency;
+    return { govTotal, acuityCount, acuityDate, uptime, clientCount, lagMin };
   }, [latestByFeed]);
 
   // Latency chart data
@@ -130,7 +130,7 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-[#0A1628]">3-Way Match Status</h3>
           <p className="text-xs text-[#8699AF]">
-            Government sources → Acuity vendor → BofA screening system · As of {threeWay.acuityDate}
+            Government sources → Acuity vendor → Client screening system · As of {threeWay.acuityDate}
           </p>
         </div>
 
@@ -182,19 +182,19 @@ export default function ListFeedHealth({ filter }: ListFeedHealthProps) {
             </div>
           </div>
 
-          {/* Connector Acuity → BofA */}
+          {/* Connector Acuity → Client */}
           <div className="flex flex-col items-center justify-center gap-2 px-4">
             <ArrowRight className="w-5 h-5 text-[#4A5D75]" />
             <CheckCircle className="w-4 h-4 text-[#1A6632]" />
           </div>
 
-          {/* Panel 3 — BofA Screening System */}
+          {/* Panel 3 — Client Screening System */}
           <div className="rounded-xl border border-[#D0D9E8] p-5">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[#4A5D75] mb-3">
-              BofA Screening System
+              Client Screening System
             </p>
             <p className="font-['IBM_Plex_Sans_Condensed'] font-bold text-[2rem] leading-none text-[#0A1628]">
-              {threeWay.boaCount.toLocaleString()}
+              {threeWay.clientCount.toLocaleString()}
             </p>
             <p className="text-[11px] text-[#8699AF] mt-1 mb-3">frozen at last successful load</p>
             <div className="space-y-1.5">

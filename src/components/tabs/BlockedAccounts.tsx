@@ -1,6 +1,6 @@
 "use client";
 
-// Aesthetic: BofA command center — white cards, navy/blue headers, red for breach
+// Aesthetic: command center — white cards, navy/blue headers, red for breach
 // This tab is a reconciliation engine. The OFAC filing table IS the feature.
 
 import { useState, useMemo } from "react";

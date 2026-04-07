@@ -1,7 +1,7 @@
 'use client'
 
 // Aesthetic: Swiss / typographic — Bloomberg terminal meets enterprise audit war room
-// Color strategy: BofA tokens dominant — navy #003571 headers, blue #0065B3 accents, red #E61030 breach states
+// Color strategy: navy #003571 headers, blue #0065B3 accents, red #E61030 breach states
 // Typography: IBM Plex Sans Condensed (KPI numerics) + IBM Plex Sans (body/tables)
 
 import { useState, useMemo, useCallback, useEffect } from 'react'
@@ -336,7 +336,7 @@ export default function AlertReview({ filters }: AlertReviewProps) {
   // Escalation protocols
   const l1SLAEsc = {
     action: 'Notify Analyst Lead within 1 hour. Escalate to Audit Director if unresolved in 4 hours.',
-    contacts: ['Analyst Lead — sanctions-lead@bofa.com', 'Audit Director — jason.cahaly@bofa.com'],
+    contacts: ['Analyst Lead', 'Audit Director'],
   }
   const mcEsc = {
     action: 'Immediate escalation to Audit Director and IT Security. Document in ATM. Remediate entitlement within 24 hours.',

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BofA Sanctions Continuous Monitoring | Crowe LLP",
+  title: "Sanctions Continuous Monitoring | Crowe LLP",
   description: "Sanctions audit continuous monitoring dashboard — Crowe AI Practice",
 };
 
